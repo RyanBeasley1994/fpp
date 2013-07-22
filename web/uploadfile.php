@@ -39,7 +39,18 @@
 	margin-left: auto;
 	margin-right: auto;
 }
-
+#divSeq {
+	min-height: 300px;
+	max-height: 300px;
+	width: 383px;
+	float: left;
+}
+#divSeqData {
+	overflow: auto;
+	min-height: 220px;
+	max-height: 220px;
+	width: 100%;
+}
 #tblSequences {
 	width: 100%;
 }
@@ -64,7 +75,20 @@
 .songName {
 	width: 65%;
 }
-
+#divMusic {
+	overflow: auto;
+	display: table;
+	min-height: 300px;
+	max-height: 300px;
+	width: 383px;
+	float: right;
+}
+#divMusicData {
+	overflow: auto;
+	min-height: 220px;
+	max-height: 220px;
+	width: 100%;
+}
 #uploader_div {
 	display: block;
 	min-height: 300px;
@@ -84,7 +108,7 @@ h2 {
 	text-align: right;
 }
 .selectedentry {
-	background: #888;
+	background: #EEE;
 }
 </style>
 </head>
@@ -126,7 +150,7 @@ $('#uploader_div').ajaxupload({
 	url:'upload.php',
 	remotePath:'/home/pi/media/upload/',
 	removeOnSuccess: true,
-	maxFileSize:'100M',
+	maxFileSize:'1000M',
 	chunkSize:1048576,
 	success:	function(fileName){
 				moveFile(fileName);
