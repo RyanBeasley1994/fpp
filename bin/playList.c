@@ -55,9 +55,7 @@ void CalculateNextPlayListEntry()
 	else if(FPPstatus == FPP_STATUS_STOPPING_GRACEFULLY)
 	{
 		lastEntry = playlistDetails.last?playlistDetails.playListCount-1:PLAYLIST_STOP_INDEX;
-		printf("lastEntry = %d\n",lastEntry);
 		playlistDetails.currentPlaylistEntry = playlistDetails.currentPlaylistEntry == playlistDetails.playListCount-1 ? PLAYLIST_STOP_INDEX:lastEntry;
-		printf(" dfdfdf currentPlaylistEntry = %d\n",playlistDetails.currentPlaylistEntry);
 	}
 	else
 	{	
