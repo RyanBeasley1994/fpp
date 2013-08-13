@@ -1,5 +1,4 @@
 #include "fpp.h"
-#include "log.h"
 #include "playList.h"
 #include "command.h"
 #include "E131.h"
@@ -83,11 +82,13 @@ int ReadPlaylist(char const * file)
   strcpy(playlistDetails.currentPlaylist,playlistFolder);
   strcat(playlistDetails.currentPlaylist,file);
 
-  LogWrite("Opening File Now %s\n",playlistDetails.currentPlaylist);
+  sprintf(logText,"Opening File Now %s\n",playlistDetails.currentPlaylist);
+  LogWrite(logText);
   fp = fopen(playlistDetails.currentPlaylist, "r");
   if (fp == NULL) 
   {
-    LogWrite("Could not open playlist file %s\n",file);
+    sprintf(logText,"Could not open playlist file %s\n",file);
+    LogWrite(logText);
   return 0;
   }
 	// Parse Playlist settings (First, Last)
@@ -127,7 +128,8 @@ int ReadPlaylist(char const * file)
         playlistDetails.playList[listIndex].type = PL_TYPE_PAUSE;
         break;
       default:
-        LogWrite("Invalid entry in sequence file %s\n",file);
+        sprintf(logText,"Invalid entry in sequence file %s\n",file);
+        LogWrite(logText);
         return 0;
         break;
     }
@@ -247,7 +249,8 @@ void Play_PlaylistEntry(void)
       break;
     case PL_TYPE_SEQUENCE:
       currentSequenceFileSize=E131_OpenSequenceFile(playlistDetails.playList[playlistDetails.currentPlaylistEntry].seqName);
-      LogWrite("seqFileSize=%lu\n",currentSequenceFileSize);
+      sprintf(logText,"seqFileSize=%lu\n",currentSequenceFileSize);
+      LogWrite(logText);
       break;
     case PL_TYPE_PAUSE:
       break;
@@ -272,13 +275,18 @@ void PlaylistStopSong(void)
 void PlaylistPrint()
 {
   int i=0;
-  LogWrite("playListCount=%d\n",playlistDetails.playListCount);
+  sprintf(logText,"playListCount=%d\n",playlistDetails.playListCount);
+  LogWrite(logText);
   for(i=0;i<playlistDetails.playListCount;i++)
   {
-    LogWrite("type=%d\n",playlistDetails.playList[i].type);
-    LogWrite("seqName=%s\n",playlistDetails.playList[i].seqName);
-    LogWrite("SongName=%s\n",playlistDetails.playList[i].songName);
-    LogWrite("pauselength=%d\n",playlistDetails.playList[i].pauselength);
+    sprintf(logText,"type=%d\n",playlistDetails.playList[i].type);
+    LogWrite(logText);
+    sprintf(logText,"seqName=%s\n",playlistDetails.playList[i].seqName);
+    LogWrite(logText);
+    sprintf(logText,"SongName=%s\n",playlistDetails.playList[i].songName);
+    LogWrite(logText);
+    sprintf(logText,"pauselength=%d\n",playlistDetails.playList[i].pauselength);
+    LogWrite(logText);
   }
 }
 

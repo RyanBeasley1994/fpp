@@ -1,4 +1,3 @@
-#include "log.h"
 #include "E131.h"
 #include "playList.h"
 #include "mpg123.h"
@@ -15,6 +14,7 @@
 #include <string.h>
 
 // external variables
+extern char logText[256];
 extern struct mpg123_type mpg123;
 extern PlaylistEntry playList[32];
 extern int MusicPlayerStatus;
@@ -110,7 +110,8 @@ int E131_InitializeNetwork()
   sendSocket = socket(AF_INET, SOCK_DGRAM, 0);
   if (sendSocket < 0) 
   {
-    LogWrite("Error opening datagram sockets\n");
+    sprintf(logText,"Error opening datagram sockets");
+    LogWrite(logText);
 
     exit(1);
   }
@@ -120,14 +121,16 @@ int E131_InitializeNetwork()
   localAddress.sin_addr.s_addr = inet_addr(LocalAddress);
   if(bind(sendSocket, (struct sockaddr *) &localAddress, sizeof(struct sockaddr_in)) == -1)
   {
-    LogWrite("Error in bind\n");
+    sprintf(logText,"Error in bind\r");
+    LogWrite(logText);
   } 
 
   /* Disable loopback so I do not receive my own datagrams. */
   char loopch = 0;
   if(setsockopt(sendSocket, IPPROTO_IP, IP_MULTICAST_LOOP, (char *)&loopch, sizeof(loopch)) < 0)
   {
-    LogWrite("Error setting IP_MULTICAST_LOOP error\n");
+    sprintf(logText,"Error setting IP_MULTICAST_LOOP error");
+    LogWrite(logText);
     close(sendSocket);
     return 0;
   }
@@ -242,7 +245,7 @@ void E131_Send()
 		 if(sendBlankingData)
 		 {
 		 		memset(E131packet+E131_HEADER_LENGTH,0,universes[i].size);
-				LogWrite("sending Zeros\n");
+				printf("sending Zeros\n");
 		 }
 		 else
 		 {
@@ -298,9 +301,11 @@ void Playlist_SyncToMusic(void)
 		}
 		
     absDifference = abs(diff);
-    LogWrite("diff = %d , abs = %d     \n",diff,absDifference);
+    //sprintf(logText,"diff = %d , abs = %d     \n",diff,absDifference);
+    //LogWrite(logText);
 
-    LogWrite("Syncing to Music\n");
+    //sprintf(logText,"Syncing to Music\n");
+    //LogWrite(logText);
     filePosition = CalculatedMusicFilePosition;
     fseek(seqFile, CalculatedMusicFilePosition, SEEK_SET);
   //}
@@ -324,7 +329,8 @@ void E131_SyncInfo()
 		}
 		
     absDifference = abs(diff);
-    LogWrite("diff = %d , abs = %d\n",diff,absDifference);
+    sprintf(logText,"diff = %d , abs = %d     \n",diff,absDifference);
+    LogWrite(logText);
   }
 }
 
@@ -336,11 +342,13 @@ void LoadUniversesFromFile()
   UniverseCount=0;
 	char active =0;
 
-  LogWrite("Opening File Now %s\n",universeFile);
+  sprintf(logText,"Opening File Now %s\n",universeFile);
+  LogWrite(logText);
   fp = fopen(universeFile, "r");
   if (fp == NULL) 
   {
-    LogWrite("Could not open universe file %s\n",universeFile);
+    sprintf(logText,"Could not open universe file %s\n",universeFile);
+    LogWrite(logText);
   	return;
   }
   while(fgets(buf, 512, fp) != NULL)
@@ -388,7 +396,7 @@ void UniversesPrint()
   int h;
   for(i=0;i<UniverseCount;i++)
   {
-    LogWrite("%d:%d:%d:%d:%d  %s\n",
+    sprintf(logText,"%d:%d:%d:%d:%d  %s\n",
                                           universes[i].active,
                                           universes[i].universe,
                                           universes[i].size,
@@ -396,6 +404,7 @@ void UniversesPrint()
                                           universes[i].type,
                                           universes[i].unicastAddress
                                           );
+    LogWrite(logText);
 
   }
 }

@@ -1,5 +1,4 @@
 #include "fpp.h"
-#include "log.h"
 #include "command.h"
 #include "schedule.h"
 #include "playList.h"
@@ -15,6 +14,7 @@
 #include <errno.h>
 #include <stdlib.h>
 
+extern char logText[256];
 extern int FPPstatus;
 extern int FPPDmode;
 
@@ -39,7 +39,8 @@ extern int numberOfSecondsPaused;
 
  void Command_Initialize()
  {
-   LogWrite("Initializing Command Module\n");
+   sprintf(logText,"Initializing Command Module\n\r");
+   LogWrite(logText);
    signal(SIGINT, exit_handler);
    signal(SIGTERM, exit_handler);
 
@@ -136,12 +137,12 @@ extern int numberOfSecondsPaused;
       sleep(1);
 
       s = strtok(command,",");
-			LogWrite("parse1=%s\n",s);
+			printf("parse1=%s\n",s);
       s = strtok(NULL,",");
-			LogWrite("parse2=%s\n",s);
+			printf("parse2=%s\n",s);
       strcpy(playlistDetails.currentPlaylistFile,s);
       s = strtok(NULL,",");
-			LogWrite("parse3=%s\n",s);
+			printf("parse3=%s\n",s);
 		  playlistDetails.currentPlaylistEntry = atoi(s);
 			playlistDetails.playlistStarting=1;
 			FPPstatus = FPP_STATUS_PLAYLIST_PLAYING;
@@ -156,12 +157,12 @@ extern int numberOfSecondsPaused;
       sleep(1);
 
       s = strtok(command,",");
-  		LogWrite("parse1=%s\n",s);
+  		printf("parse1=%s\n",s);
       s = strtok(NULL,",");
-  		LogWrite("parse2=%s\n",s);
+  		printf("parse2=%s\n",s);
       strcpy(playlistDetails.currentPlaylistFile,s);
       s = strtok(NULL,",");
-			LogWrite("parse3=%s\n",s);
+			printf("parse3=%s\n",s);
 		  playlistDetails.currentPlaylistEntry = atoi(s);
 			playlistDetails.playlistStarting=1;
       FPPstatus = FPP_STATUS_STOPPING_GRACEFULLY;
@@ -212,7 +213,8 @@ extern int numberOfSecondsPaused;
 
   void exit_handler(int signum)
 	{
-     LogWrite("Caught signal %d\n",signum);
+     sprintf(logText,"Caught signal %d\n",signum);
+     LogWrite(logText);
      CloseCommand();
 	   exit(signum);
 	}

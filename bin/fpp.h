@@ -5,4 +5,6 @@
 #define FPP_STATUS_PLAYLIST_PLAYING     1
 #define FPP_STATUS_STOPPING_GRACEFULLY  2
 
+void LogWrite(const char* text);
+
 #endif
