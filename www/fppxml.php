@@ -12,6 +12,7 @@ if(empty($a))
 }
 $_SESSION['session_id'] = session_id();
 
+//define("PLAYLIST_DIRECTORY","/home/pi/media/playlists/");
 
 if($_GET['command'] == "getMusicFiles")
 {
@@ -118,16 +119,15 @@ else if($_GET['command'] == "moveFile")
 	MoveFile($_GET['file']);
 } 
 
-
-else if(!empty($_POST['command']) && $_POST['command'] == "saveUniverses")
+else if($_POST['command'] == "saveUniverses")
 {
 	SetUniverses();
 }
-else if(!empty($_POST['command']) && $_POST['command'] == "savePixelnetDMX")
+else if($_POST['command'] == "savePixelnetDMX")
 {
 	SavePixelnetDMX();
 }
-else if(!empty($_POST['command']) && $_POST['command'] == "saveSchedule")
+else if($_POST['command'] == "saveSchedule")
 {
 	SaveSchedule($_POST['reload']);
 }
@@ -215,28 +215,15 @@ function MoveFile($file)
 	{
 		if (strpos(strtolower($file),".mp3") !== false) 
 		{
-			if ( !rename("/home/pi/media/upload/" . $file,	"/home/pi/media/music/" . $file) )
-			{
-				error_log("Couldn't move music file");
-				exit(1);
-			}
+			rename("/home/pi/media/upload/" . $file,	"/home/pi/media/music/" . $file);
 		}
 		else
 		{
-			if ( !rename("/home/pi/media/upload/" . $file,	"/home/pi/media/sequences/" . $file) )
-			{
-				error_log("Couldn't move music file");
-				exit(1);
-			}
+			rename("/home/pi/media/upload/" . $file,	"/home/pi/media/sequences/" . $file);
 		}
 	}
-	else
-	{
-		error_log("Couldn't find file in upload directory");
-		exit(1);
-	}
 	$doc = new DomDocument('1.0');
-	$root = $doc->createElement('Status');
+  $root = $doc->createElement('Status');
 	$root = $doc->appendChild($root);  
 	$value = $doc->createTextNode('Success');
 	$value = $root->appendChild($value);
@@ -245,7 +232,7 @@ function MoveFile($file)
 
 function IsFPPDrunning()
 {
-	$status=exec("if ps cax | grep -q fppd; then echo \"true\"; else echo \"false\"; fi");
+	$status=exec("sudo fppdRunning.sh");
 	$doc = new DomDocument('1.0');
   $root = $doc->createElement('Status');
 	$root = $doc->appendChild($root);  
@@ -308,7 +295,7 @@ function StopFPPD()
 
 function StartFPPD()
 {
-	$status=exec("if ps cax | grep -q fppd; then echo \"true\"; else echo \"false\"; fi");
+	$status=exec("sudo fppdRunning.sh");
 	if($status == 'false')
 	{
 		$status=exec("sudo fppd>/dev/null");
