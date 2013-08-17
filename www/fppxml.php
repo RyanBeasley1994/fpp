@@ -12,6 +12,7 @@ if(empty($a))
 }
 $_SESSION['session_id'] = session_id();
 
+//define("PLAYLIST_DIRECTORY","/home/pi/media/playlists/");
 
 if($_GET['command'] == "getMusicFiles")
 {
@@ -118,16 +119,15 @@ else if($_GET['command'] == "moveFile")
 	MoveFile($_GET['file']);
 } 
 
-
-else if(!empty($_POST['command']) && $_POST['command'] == "saveUniverses")
+else if($_POST['command'] == "saveUniverses")
 {
 	SetUniverses();
 }
-else if(!empty($_POST['command']) && $_POST['command'] == "savePixelnetDMX")
+else if($_POST['command'] == "savePixelnetDMX")
 {
 	SavePixelnetDMX();
 }
-else if(!empty($_POST['command']) && $_POST['command'] == "saveSchedule")
+else if($_POST['command'] == "saveSchedule")
 {
 	SaveSchedule($_POST['reload']);
 }
