@@ -6,12 +6,18 @@ require_once('pixelnetdmxentry.php');
 header('Content-type: text/xml');
 
 $a = session_id();
-if(empty($a)) 
+if(empty($a)) session_start();
 {
 	session_start();
 }
 $_SESSION['session_id'] = session_id();
 
+//define("PLAYLIST_DIRECTORY","/home/pi/media/playlists/");
+
+
+if($_SESSION['UniverseEntries'] == NULL)
+{
+}
 
 if($_GET['command'] == "getMusicFiles")
 {
@@ -25,21 +31,10 @@ else if($_GET['command'] == "getSequences")
 {
 	GetSequenceFiles();	
 }
-
-else if($_GET['command'] == "getPlayListSettings")
-{
-	GetPlaylistSettings($_GET['pl']);
-}
 else if($_GET['command'] == "getPlayListEntries")
 {
 	GetPlaylistEntries($_GET['pl'],$_GET['reload']);
 }
-
-else if($_GET['command'] == "setPlayListFirstLast")
-{
-	SetPlayListFirstLast($_GET['first'],$_GET['last']);
-}
-
 else if($_GET['command'] == "addPlayList")
 {
 	AddPlaylist($_GET['pl']);
@@ -48,9 +43,9 @@ else if($_GET['command'] == "sort")
 {
 	PlaylistEntryPositionChanged($_GET['newIndex'],$_GET['oldIndex']);	
 }
-else if($_GET['command'] == "savePlaylist")
+else if($_GET['command'] == "save")
 {
-	SavePlaylist($_GET['name'],$_GET['first'],$_GET['last']);	
+	SavePlaylist($_GET['name']);	
 }
 else if($_GET['command'] == "deletePlaylist")
 {
@@ -74,7 +69,7 @@ else if ($_GET['command'] == "addPlaylistEntry")
 	$doc = new DomDocument('1.0');
     $root = $doc->createElement('Status');
 	$root = $doc->appendChild($root);  
-	$value = $doc->createTextNode($_GET['songFile']);
+	$value = $doc->createTextNode('Success');
 	$value = $root->appendChild($value);
 	echo $doc->saveHTML();
 }
@@ -119,17 +114,17 @@ else if($_GET['command'] == "moveFile")
 } 
 
 
-else if(!empty($_POST['command']) && $_POST['command'] == "saveUniverses")
+else if($_POST['command'] == "saveUniverses")
 {
 	SetUniverses();
 }
-else if(!empty($_POST['command']) && $_POST['command'] == "savePixelnetDMX")
+else if($_POST['command'] == "savePixelnetDMX")
 {
 	SavePixelnetDMX();
 }
-else if(!empty($_POST['command']) && $_POST['command'] == "saveSchedule")
+else if($_POST['command'] == "saveSchedule")
 {
-	SaveSchedule($_POST['reload']);
+	SaveSchedule($_GET['reload']);
 }
 else if($_GET['command'] == "isFPPDrunning")
 {
@@ -187,6 +182,7 @@ function RebootPi()
 	echo $doc->saveHTML();	
 }
 
+
 function SetVolume($volume)
 {
 	$status=exec("sudo fpp -v " . $volume);
@@ -215,28 +211,15 @@ function MoveFile($file)
 	{
 		if (strpos(strtolower($file),".mp3") !== false) 
 		{
-			if ( !rename("/home/pi/media/upload/" . $file,	"/home/pi/media/music/" . $file) )
-			{
-				error_log("Couldn't move music file");
-				exit(1);
-			}
+			rename("/home/pi/media/upload/" . $file,	"/home/pi/media/music/" . $file);
 		}
 		else
 		{
-			if ( !rename("/home/pi/media/upload/" . $file,	"/home/pi/media/sequences/" . $file) )
-			{
-				error_log("Couldn't move music file");
-				exit(1);
-			}
+			rename("/home/pi/media/upload/" . $file,	"/home/pi/media/sequences/" . $file);
 		}
 	}
-	else
-	{
-		error_log("Couldn't find file in upload directory");
-		exit(1);
-	}
 	$doc = new DomDocument('1.0');
-	$root = $doc->createElement('Status');
+  $root = $doc->createElement('Status');
 	$root = $doc->appendChild($root);  
 	$value = $doc->createTextNode('Success');
 	$value = $root->appendChild($value);
@@ -245,7 +228,7 @@ function MoveFile($file)
 
 function IsFPPDrunning()
 {
-	$status=exec("if ps cax | grep -q fppd; then echo \"true\"; else echo \"false\"; fi");
+	$status=exec("sudo fppdRunning.sh");
 	$doc = new DomDocument('1.0');
   $root = $doc->createElement('Status');
 	$root = $doc->appendChild($root);  
@@ -308,7 +291,7 @@ function StopFPPD()
 
 function StartFPPD()
 {
-	$status=exec("if ps cax | grep -q fppd; then echo \"true\"; else echo \"false\"; fi");
+	$status=exec("sudo fppdRunning.sh");
 	if($status == 'false')
 	{
 		$status=exec("sudo fppd>/dev/null");
@@ -1212,29 +1195,12 @@ function AddPlaylist($name)
 	echo $doc->saveHTML();
 }
 
-function SetPlayListFirstLast($first,$last)
-{
-	$_SESSION['playlist_first'] = $first;
-	$_SESSION['playlist_last'] = $last;
-	$doc = new DomDocument('1.0');
-	$root = $doc->createElement('Status');
-	$root = $doc->appendChild($root); 
-	$value = $doc->createTextNode("Success");
-	$value = $root->appendChild($value);
-	echo $doc->saveHTML();
-}
-
 function LoadPlayListDetails($file)
 {
 	$playListEntries = NULL;
 	$_SESSION['playListEntries']=NULL;
-	
 	$f=fopen("/home/pi/media/playlists/" . $file,"rx") or exit("Unable to open file! : " . "/home/pi/media/playlists/" . $file);
 	$i=0;
-	$line=fgets($f);
-	$entry = explode(",",$line,50);
-	$_SESSION['playlist_first']=$entry[0];
-	$_SESSION['playlist_last']=$entry[1];
 	while (!feof($f))
 	{
 		$line=fgets($f);
@@ -1279,26 +1245,6 @@ function LoadPlayListDetails($file)
 //	Print_r($_SESSION['playListEntries']);
 }
 
-function GetPlayListSettings($file)
-{
-	$doc = new DomDocument('1.0');
-	// Playlist Entries
-  $root = $doc->createElement('playlist_settings');
-	$root = $doc->appendChild($root);  
-	// First setting
-  $first = $doc->createElement('playlist_first');
-	$first = $root->appendChild($first);  
-	$value = $doc->createTextNode($_SESSION['playlist_first']);
-	$value = $first->appendChild($value);
-	// Last setting
-  $last = $doc->createElement('playlist_last');
-	$last = $root->appendChild($last);  
-	$value = $doc->createTextNode($_SESSION['playlist_last']);
-	$value = $last->appendChild($value);
-
-	echo $doc->saveHTML();
-}
-
 function GetPlaylistEntries($file,$reloadFile)
 {
 	$_SESSION['currentPlaylist'] = $file;
@@ -1307,7 +1253,6 @@ function GetPlaylistEntries($file,$reloadFile)
 		LoadPlayListDetails($file);
 	}
 	$doc = new DomDocument('1.0');
-	// Playlist Entries
   $root = $doc->createElement('PlaylistEntries');
 	$root = $doc->appendChild($root);  
 //  Print_r($_SESSION['playListEntries']);
@@ -1370,10 +1315,10 @@ function PlaylistEntryPositionChanged($newIndex,$oldIndex)
 }
 
 
-function SavePlaylist($name,$first,$last)
+function SavePlaylist($name)
 {
+	$entries = "";
 	$f=fopen("/home/pi/media/playlists/" . $name,"w") or exit("Unable to open file! : " . "/home/pi/media/playlists/" . $name);
-	$entries = sprintf("%s,%s,\n",$first,$last);
 	for($i=0;$i<count($_SESSION['playListEntries']);$i++)
 	{
 		if($_SESSION['playListEntries'][$i]->type == 'b')

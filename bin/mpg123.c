@@ -1,6 +1,5 @@
 #include "mpg123.h"
 #include "fpp.h"
-#include "log.h"
 #include "E131.h"
 #include "playList.h"
 #include <unistd.h>
@@ -20,6 +19,7 @@ int lastSecond=0;
 
 int MusicPlayerStatus = IDLE_MPLAYER_STATUS;
 char mCommand[150];
+extern char logText[256];
 
 struct mpg123_type mpg123;
 
@@ -90,9 +90,11 @@ void mpg123_cmd( struct mpg123_type prog, int cmd, char *arg)
          break;
       case CMD_VOLUME:
          sprintf(mCommand, "VOLUME %s\n", arg);
+				 LogWrite(logText);
          break;
       default:
-         LogWrite("mpg123_cmd(): uknown command: %d\n", cmd);
+         sprintf(logText,"mpg123_cmd(): uknown command: %d\n", cmd);
+         LogWrite(logText);
          return;
       
    }
@@ -153,10 +155,12 @@ struct mpg123_type mpg123_proc( struct mpg123_type prog ) {
                   prog.playstat = atoi(tmp);
                   break;
                case 'E':
-                  LogWrite("Error: %s\n", prog.out);
+                  sprintf(logText,"Error: %s\n", prog.out);
+                  LogWrite(logText);
                   break;
                default:
-                  LogWrite("unknown response: %s\n", prog.out);
+                  sprintf(logText,"unknown response: %s\n", prog.out);
+                  LogWrite(logText);
                   break;
             }
          }
@@ -170,12 +174,14 @@ struct mpg123_type mpg123_proc( struct mpg123_type prog ) {
 void  MPG_PlaySong()
 {
     MusicPlayerStatus = QUEUED_MPLAYER_STATUS;
-    LogWrite("Changing Status to Queued\n");
+    sprintf(logText,"Changing Status to Queued\n");
+    LogWrite(logText);
     mpg123.playstat = PLAY_PLAY;
     // Create for path of song 
     strcpy(currentSongPath,musicFolder);
     strcat(currentSongPath,currentSong);
-    LogWrite("Starting Song = %s\n",currentSongPath);
+    sprintf(logText,"Starting Song = %s",currentSongPath);
+    LogWrite(logText);
     // Send command to play song    
     mpg123_cmd(mpg123,CMD_PLAY,currentSongPath);
     lastSecond = (int)mpg123.seconds;
@@ -183,14 +189,16 @@ void  MPG_PlaySong()
 
 void MPG_StopSong(void)
 {
-  LogWrite("Changing Status to stop\n");
+  sprintf(logText,"Changing Status to stop\n");
+  LogWrite(logText);
   mpg123_cmd(mpg123,CMD_STOP,NULL);
 	MusicPlayerStatus = IDLE_MPLAYER_STATUS;
 }
 
 void MPG_SetVolume(char * volume)
 {
-  LogWrite("Setting Volume\n");
+  sprintf(logText,"Setting Volume\n");
+  LogWrite(logText);
   mpg123_cmd(mpg123,CMD_VOLUME,volume);
 }
 
@@ -204,9 +212,11 @@ void MPG_UpdateStatus()
         if(lastSecond !=(int)mpg123.seconds)
         {
           lastSecond = (int)mpg123.seconds;
-          LogWrite("Seconds= %g Remaining=%g\n",mpg123.seconds,mpg123.secondsleft);
+          sprintf(logText,"Seconds= %g Remaining=%g\n\r",mpg123.seconds,mpg123.secondsleft);
+          LogWrite(logText);
           MusicPlayerStatus = PLAYING_MPLAYER_STATUS;
-          LogWrite("Changing Statusssss to play\n");
+          sprintf(logText,"Changing Statusssss to play\n");
+          LogWrite(logText);
         }
         break;
       case PLAYING_MPLAYER_STATUS:
@@ -214,7 +224,8 @@ void MPG_UpdateStatus()
         {
           MusicPlayerStatus=IDLE_MPLAYER_STATUS;
 					E131_CloseSequenceFile();
-          LogWrite("Changing Status to idle\n");
+          sprintf(logText,"Changing Status to idle\n");
+          LogWrite(logText);
         }
         break;
       default:

@@ -1,5 +1,4 @@
 #include "fpp.h"
-#include "log.h"
 #include "playList.h"
 #include "command.h"
 #include "E131.h"
@@ -18,11 +17,21 @@
 
 char * playlistFolder = "/home/pi/media/playlists/";
 
-PlaylistDetails playlistDetails;
+char currentPlaylist[128];
+PlaylistEntry playList[32];
+int playListCount;
+int currentPlaylistEntry=0;
+int nextPlaylistEntry=0;
+char firstTimeThrough = 0;
+
 extern unsigned long currentSequenceFileSize;
+
+int StopPlaylist=0;
+
+char currentPlaylist[128];
+char currentPlaylistFile[128];
 char currentSequenceFile[128];
 char * pl = "playlist1.lst";
-
 
 extern int E131status;
 
@@ -42,37 +51,6 @@ int pauseStatus = PAUSE_STATUS_IDLE;
 
 extern char logText[256];
 
-void CalculateNextPlayListEntry()
-{
-	int maxEntryIndex;
-	int firstEntryIndex;
-	int lastEntry;
-	if(playlistDetails.playlistStarting)
-	{
-		// Do not change "playlistDetails.currentPlaylistEntry"
-		playlistDetails.playlistStarting=0;
-		return;
-	}
-	else if(FPPstatus == FPP_STATUS_STOPPING_GRACEFULLY)
-	{
-		lastEntry = playlistDetails.last?playlistDetails.playListCount-1:PLAYLIST_STOP_INDEX;
-		playlistDetails.currentPlaylistEntry = playlistDetails.currentPlaylistEntry == playlistDetails.playListCount-1 ? PLAYLIST_STOP_INDEX:lastEntry;
-	}
-	else
-	{	
-		maxEntryIndex = playlistDetails.last?playlistDetails.playListCount-1:playlistDetails.playListCount; 
-		//printf("Last=%d maxEntryIndex=%d\n", playlistDetails.last,maxEntryIndex); 
-		playlistDetails.currentPlaylistEntry++;
- 		if(playlistDetails.currentPlaylistEntry >= maxEntryIndex)
-		{
-			// Calculate where start index is.
-			firstEntryIndex = playlistDetails.first?1:0; 
-			playlistDetails.currentPlaylistEntry = firstEntryIndex;
-		}
-	}
-}
-
-
 int ReadPlaylist(char const * file)
 {
   FILE *fp;
@@ -80,54 +58,49 @@ int ReadPlaylist(char const * file)
   char buf[512];
   char *s;
   // Put together playlist file with default folder
-  strcpy(playlistDetails.currentPlaylist,playlistFolder);
-  strcat(playlistDetails.currentPlaylist,file);
+  strcpy(currentPlaylist,playlistFolder);
+  strcat(currentPlaylist,file);
 
-  LogWrite("Opening File Now %s\n",playlistDetails.currentPlaylist);
-  fp = fopen(playlistDetails.currentPlaylist, "r");
+  sprintf(logText,"Opening File Now %s\n",currentPlaylist);
+  LogWrite(logText);
+  fp = fopen(currentPlaylist, "r");
   if (fp == NULL) 
   {
-    LogWrite("Could not open playlist file %s\n",file);
+    sprintf(logText,"Could not open playlist file %s\n",file);
+    LogWrite(logText);
   return 0;
   }
-	// Parse Playlist settings (First, Last)
-	fgets(buf, 512, fp);
-  s=strtok(buf,",");
-	playlistDetails.first = atoi(s);
-  s = strtok(NULL,",");
-	playlistDetails.last = atoi(s);
-
-	// Parse Playlists 
   while(fgets(buf, 512, fp) != NULL)
   {
     s=strtok(buf,",");
-    playlistDetails.playList[listIndex].cType = s[0];
+    playList[listIndex].cType = s[0];
     switch(s[0])
     {
       case 'b':
         s = strtok(NULL,",");
-        strcpy(playlistDetails.playList[listIndex].seqName,s);
+        strcpy(playList[listIndex].seqName,s);
         s = strtok(NULL,",");
-        strcpy(playlistDetails.playList[listIndex].songName,s);
-        playlistDetails.playList[listIndex].type = PL_TYPE_BOTH;
+        strcpy(playList[listIndex].songName,s);
+        playList[listIndex].type = PL_TYPE_BOTH;
         break;
       case 's':
         s = strtok(NULL,",");
-        strcpy(playlistDetails.playList[listIndex].seqName,s);
-        playlistDetails.playList[listIndex].type = PL_TYPE_SEQUENCE;
+        strcpy(playList[listIndex].seqName,s);
+        playList[listIndex].type = PL_TYPE_SEQUENCE;
         break;
       case 'm':
         s = strtok(NULL,",");
-        strcpy(playlistDetails.playList[listIndex].songName,s);
-        playlistDetails.playList[listIndex].type = PL_TYPE_MUSIC;
+        strcpy(playList[listIndex].songName,s);
+        playList[listIndex].type = PL_TYPE_MUSIC;
         break;
       case 'p':
         s = strtok(NULL,",");
-        playlistDetails.playList[listIndex].pauselength = atoi(s);
-        playlistDetails.playList[listIndex].type = PL_TYPE_PAUSE;
+        playList[listIndex].pauselength = atoi(s);
+        playList[listIndex].type = PL_TYPE_PAUSE;
         break;
       default:
-        LogWrite("Invalid entry in sequence file %s\n",file);
+        sprintf(logText,"Invalid entry in sequence file %s\n",file);
+        LogWrite(logText);
         return 0;
         break;
     }
@@ -139,16 +112,18 @@ int ReadPlaylist(char const * file)
 
 void PlayListPlayingLoop(void)
 {
-  playlistDetails.StopPlaylist = 0;
-  playlistDetails.playListCount = ReadPlaylist(playlistDetails.currentPlaylistFile);
-  if(playlistDetails.currentPlaylistEntry < 0 || playlistDetails.currentPlaylistEntry >= playlistDetails.playListCount)
+  StopPlaylist = 0;
+  playListCount = ReadPlaylist(currentPlaylistFile);
+  if(currentPlaylistEntry < 0 || currentPlaylistEntry >= playListCount)
 	{
-		playlistDetails.currentPlaylistEntry = 0;
+		currentPlaylistEntry = 0;
+		nextPlaylistEntry = 0;
 	}
-  while(!playlistDetails.StopPlaylist)
+	firstTimeThrough = 1;
+  while(!StopPlaylist)
   {
     usleep(10000);
-    switch(playlistDetails.playList[playlistDetails.currentPlaylistEntry].type)
+    switch(playList[currentPlaylistEntry].type)
     {
       case PL_TYPE_BOTH:
         if(MusicPlayerStatus == IDLE_MPLAYER_STATUS)
@@ -211,7 +186,7 @@ void PauseProcess(void)
     case PAUSE_STATUS_STARTED:
       gettimeofday(&nowTime,NULL);
 			numberOfSecondsPaused = nowTime.tv_sec - pauseStartTime.tv_sec;
-      if(numberOfSecondsPaused >  (int)playlistDetails.playList[playlistDetails.currentPlaylistEntry].pauselength)
+      if(numberOfSecondsPaused >  (int)playList[currentPlaylistEntry].pauselength)
       {
         pauseStatus = PAUSE_STATUS_ENDED;
       }
@@ -224,41 +199,44 @@ void PauseProcess(void)
 
 void Play_PlaylistEntry(void)
 {
-  CalculateNextPlayListEntry();
-	if( playlistDetails.currentPlaylistEntry==PLAYLIST_STOP_INDEX)
-	{
-		if(FPPstatus == FPP_STATUS_STOPPING_GRACEFULLY)
-		{ 
-			printf("Changing Status to Stopping Gracefully\n"); 
-			playlistDetails.StopPlaylist = 1;
-			return;
-		}
-	}
-
-	printf("\nplayListCount=%d  CurrentPlaylistEntry = %d\n", playlistDetails.playListCount,playlistDetails.currentPlaylistEntry); 
-  switch(playlistDetails.playList[playlistDetails.currentPlaylistEntry].type)
+  currentPlaylistEntry = nextPlaylistEntry;
+  switch(playList[currentPlaylistEntry].type)
   {
     case PL_TYPE_BOTH:
-      currentSequenceFileSize=E131_OpenSequenceFile(playlistDetails.playList[playlistDetails.currentPlaylistEntry].seqName);
+      currentSequenceFileSize=E131_OpenSequenceFile(playList[currentPlaylistEntry].seqName);
       PlaylistPlaySong();
       break;
     case PL_TYPE_MUSIC:
       PlaylistPlaySong();
       break;
     case PL_TYPE_SEQUENCE:
-      currentSequenceFileSize=E131_OpenSequenceFile(playlistDetails.playList[playlistDetails.currentPlaylistEntry].seqName);
-      LogWrite("seqFileSize=%lu\n",currentSequenceFileSize);
+      currentSequenceFileSize=E131_OpenSequenceFile(playList[currentPlaylistEntry].seqName);
+      sprintf(logText,"seqFileSize=%lu\n",currentSequenceFileSize);
+      LogWrite(logText);
       break;
     case PL_TYPE_PAUSE:
       break;
   }
+  nextPlaylistEntry++;
+	//if(nextPlaylistEntry==playListCount)
+	//{
+		//printf("NextPlaylistEntry = %d, firstTimeThrough = %d\n", nextPlaylistEntry,firstTimeThrough); 
+		//if(FPPstatus == FPP_STATUS_STOPPING_GRACEFULLY && nextPlaylistEntry==playListCount && firstTimeThrough==0)
+		//{ 
+			//printf("StopPlaylist - NextPlaylistEntry = %d, firstTimeThrough = %d\n", nextPlaylistEntry,firstTimeThrough); 
+		//	StopPlaylist = 1;
+		//	return;     
+		//}
+		//firstTimeThrough=0;
+	//}
+  nextPlaylistEntry = nextPlaylistEntry%playListCount;
 
 }
 
 
 void PlaylistPlaySong(void)
 {
-  strcpy(currentSong,playlistDetails.playList[playlistDetails.currentPlaylistEntry].songName);
+  strcpy(currentSong,playList[currentPlaylistEntry].songName);
 	MPG_PlaySong();
 }
 
@@ -272,13 +250,18 @@ void PlaylistStopSong(void)
 void PlaylistPrint()
 {
   int i=0;
-  LogWrite("playListCount=%d\n",playlistDetails.playListCount);
-  for(i=0;i<playlistDetails.playListCount;i++)
+  sprintf(logText,"playListCount=%d\n",playListCount);
+  LogWrite(logText);
+  for(i=0;i<playListCount;i++)
   {
-    LogWrite("type=%d\n",playlistDetails.playList[i].type);
-    LogWrite("seqName=%s\n",playlistDetails.playList[i].seqName);
-    LogWrite("SongName=%s\n",playlistDetails.playList[i].songName);
-    LogWrite("pauselength=%d\n",playlistDetails.playList[i].pauselength);
+    sprintf(logText,"type=%d\n",playList[i].type);
+    LogWrite(logText);
+    sprintf(logText,"seqName=%s\n",playList[i].seqName);
+    LogWrite(logText);
+    sprintf(logText,"SongName=%s\n",playList[i].songName);
+    LogWrite(logText);
+    sprintf(logText,"pauselength=%d\n",playList[i].pauselength);
+    LogWrite(logText);
   }
 }
 
@@ -292,7 +275,7 @@ void StopPlaylistNow(void)
   FPPstatus = FPP_STATUS_IDLE;
   E131_CloseSequenceFile();
   PlaylistStopSong();
-  playlistDetails.StopPlaylist = 1;
+  StopPlaylist = 1;
 }
 
 void JumpToPlaylistEntry(int entryIndex)

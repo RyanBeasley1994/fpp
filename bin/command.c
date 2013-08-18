@@ -1,5 +1,4 @@
 #include "fpp.h"
-#include "log.h"
 #include "command.h"
 #include "schedule.h"
 #include "playList.h"
@@ -15,12 +14,16 @@
 #include <errno.h>
 #include <stdlib.h>
 
+extern char logText[256];
 extern int FPPstatus;
-extern int FPPmode;
+extern int FPPDmode;
+extern char currentPlaylist[128];
+extern char currentPlaylistFile[128];
 
-
-extern PlaylistDetails playlistDetails;
-
+extern PlaylistEntry playList[32];
+extern int playListCount;
+extern int currentPlaylistEntry;
+extern int nextPlaylistEntry;
 extern struct mpg123_type mpg123;
 extern char MPG123volume[4];
 
@@ -39,7 +42,8 @@ extern int numberOfSecondsPaused;
 
  void Command_Initialize()
  {
-   LogWrite("Initializing Command Module\n");
+   sprintf(logText,"Initializing Command Module\n\r");
+   LogWrite(logText);
    signal(SIGINT, exit_handler);
    signal(SIGTERM, exit_handler);
 
@@ -93,39 +97,32 @@ extern int numberOfSecondsPaused;
     case 's':
       if(FPPstatus==FPP_STATUS_IDLE)
       {
-        sprintf(response,"%d,%d,%s,%s\n",FPPmode,FPPstatus,NextPlaylist,NextScheduleStartText);
+        sprintf(response,"%d,%d,%s,%s\n",FPPDmode,FPPstatus,NextPlaylist,NextScheduleStartText);
       }
       else
       {
-				if(playlistDetails.playList[playlistDetails.currentPlaylistEntry].cType == 'b' || playlistDetails.playList[playlistDetails.currentPlaylistEntry].cType == 'm')
+				if(playList[currentPlaylistEntry].cType == 'b' || playList[currentPlaylistEntry].cType == 'm')
 				{
-					sprintf(response,"%d,%d,%s,%s,%c,%s,%s,%d,%d,%d,%d,%s,%s\n",
-			  					FPPmode,FPPstatus,MPG123volume,playlistDetails.currentPlaylist,
-									playlistDetails.playList[playlistDetails.currentPlaylistEntry].cType,
-									playlistDetails.playList[playlistDetails.currentPlaylistEntry].seqName,
-									playlistDetails.playList[playlistDetails.currentPlaylistEntry].songName,
-									playlistDetails.currentPlaylistEntry+1,playlistDetails.playListCount,
-									(int)mpg123.seconds,(int)mpg123.secondsleft,NextPlaylist,NextScheduleStartText);
+					sprintf(response,"%d,%d,%s,%s,%c,%s,%s,%d,%d,%d,%d,%s,%s\n",FPPDmode,FPPstatus,MPG123volume,currentPlaylist,playList[currentPlaylistEntry].cType,
+																			 playList[currentPlaylistEntry].seqName,playList[currentPlaylistEntry].songName,
+																			 currentPlaylistEntry+1,playListCount,(int)mpg123.seconds,(int)mpg123.secondsleft,
+																			 NextPlaylist,NextScheduleStartText);
 				}
-				else if (playlistDetails.playList[playlistDetails.currentPlaylistEntry].cType == 's')
+				else if (playList[currentPlaylistEntry].cType == 's')
 				{
-					sprintf(response,"%d,%d,%s,%s,%c,%s,%s,%d,%d,%d,%d,%s,%s\n",FPPmode,FPPstatus,MPG123volume,
-        					playlistDetails.currentPlaylist,playlistDetails.playList[playlistDetails.currentPlaylistEntry].cType,
-									playlistDetails.playList[playlistDetails.currentPlaylistEntry].seqName,playlistDetails.playList[playlistDetails.currentPlaylistEntry].songName,
-									playlistDetails.currentPlaylistEntry+1,playlistDetails.playListCount,E131secondsElasped,E131secondsRemaining,
-				  				NextPlaylist,NextScheduleStartText);
+					sprintf(response,"%d,%d,%s,%s,%c,%s,%s,%d,%d,%d,%d,%s,%s\n",FPPDmode,FPPstatus,MPG123volume,currentPlaylist,playList[currentPlaylistEntry].cType,
+																			 playList[currentPlaylistEntry].seqName,playList[currentPlaylistEntry].songName,
+																			 currentPlaylistEntry+1,playListCount,E131secondsElasped,E131secondsRemaining,
+				  														 NextPlaylist,NextScheduleStartText);
 				}
 				else
-				{			
-					sprintf(response,"%d,%d,%s,%s,%c,%s,%s,%d,%d,%d,%d,%s,%s\n",FPPmode,FPPstatus,MPG123volume,playlistDetails.currentPlaylist,
-									playlistDetails.playList[playlistDetails.currentPlaylistEntry].cType,
-									playlistDetails.playList[playlistDetails.currentPlaylistEntry].seqName,
-									playlistDetails.playList[playlistDetails.currentPlaylistEntry].songName,	
-									playlistDetails.currentPlaylistEntry+1,playlistDetails.playListCount,
-									numberOfSecondsPaused,
-									(int)playlistDetails.playList[playlistDetails.currentPlaylistEntry].pauselength-numberOfSecondsPaused,
-									NextPlaylist,NextScheduleStartText);
+				{
+					sprintf(response,"%d,%d,%s,%s,%c,%s,%s,%d,%d,%d,%d,%s,%s\n",FPPDmode,FPPstatus,MPG123volume,currentPlaylist,playList[currentPlaylistEntry].cType,
+																			 playList[currentPlaylistEntry].seqName,playList[currentPlaylistEntry].songName,	
+																			 currentPlaylistEntry+1,playListCount,numberOfSecondsPaused,
+																			 (int)playList[currentPlaylistEntry].pauselength-numberOfSecondsPaused, NextPlaylist,NextScheduleStartText);
 				}
+
       }
       break; 
     case 'p':
@@ -136,14 +133,14 @@ extern int numberOfSecondsPaused;
       sleep(1);
 
       s = strtok(command,",");
-			LogWrite("parse1=%s\n",s);
+			printf("parse1=%s\n",s);
       s = strtok(NULL,",");
-			LogWrite("parse2=%s\n",s);
-      strcpy(playlistDetails.currentPlaylistFile,s);
+			printf("parse2=%s\n",s);
+      strcpy(currentPlaylistFile,s);
       s = strtok(NULL,",");
-			LogWrite("parse3=%s\n",s);
-		  playlistDetails.currentPlaylistEntry = atoi(s);
-			playlistDetails.playlistStarting=1;
+			printf("parse3=%s\n",s);
+		  currentPlaylistEntry = atoi(s);
+  		nextPlaylistEntry=currentPlaylistEntry;
 			FPPstatus = FPP_STATUS_PLAYLIST_PLAYING;
 			
       sprintf(response,"%d,Playlist Started,,,,,,,,,,\n",COMMAND_SUCCESS);
@@ -156,14 +153,15 @@ extern int numberOfSecondsPaused;
       sleep(1);
 
       s = strtok(command,",");
-  		LogWrite("parse1=%s\n",s);
+  		printf("parse1=%s\n",s);
       s = strtok(NULL,",");
-  		LogWrite("parse2=%s\n",s);
-      strcpy(playlistDetails.currentPlaylistFile,s);
+  		printf("parse2=%s\n",s);
+      strcpy(currentPlaylistFile,s);
       s = strtok(NULL,",");
-			LogWrite("parse3=%s\n",s);
-		  playlistDetails.currentPlaylistEntry = atoi(s);
-			playlistDetails.playlistStarting=1;
+			printf("parse3=%s\n",s);
+		  currentPlaylistEntry = atoi(s);
+  		nextPlaylistEntry=currentPlaylistEntry;
+
       FPPstatus = FPP_STATUS_STOPPING_GRACEFULLY;
       sprintf(response,"%d,Playlist Started,,,,,,,,,,\n",COMMAND_SUCCESS);
       break;
@@ -212,7 +210,8 @@ extern int numberOfSecondsPaused;
 
   void exit_handler(int signum)
 	{
-     LogWrite("Caught signal %d\n",signum);
+     sprintf(logText,"Caught signal %d\n",signum);
+     LogWrite(logText);
      CloseCommand();
 	   exit(signum);
 	}

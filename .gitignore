@@ -1,8 +1,1 @@
-*.o
-cscope.out
-tags
-pixelnetDMX
-schedule
-universes
-fppdLog.txt
-_notes
+/www/FPPplayerApplet

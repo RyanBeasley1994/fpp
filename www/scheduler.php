@@ -2,7 +2,7 @@
 require_once('universeentry.php');
 $a = session_id();
 
-if(empty($a))
+if(empty($a)) session_start();
 {
 	session_start();
 }
