@@ -56,7 +56,6 @@ void PlayerProcess(void)
   Command_Initialize();
 	InitializePixelnetDMX();
   LogWrite("Initialize E131 done\n");
-	CheckIfShouldBePlayingNow();
   while(1)
   {
     usleep(100000);
