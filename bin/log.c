@@ -31,7 +31,7 @@ void _LogWrite(char *file, int line, const char *format, ...)
 		logFile = fopen(filename, "a");
 		fprintf(logFile, "%s  %s:%d:",timeStr, file, line);
 		va_start(arg, format);
-		vfprintf(logFile, format, arg);
+		fprintf(logFile, format, arg);
 		va_end(arg);
 
 		fclose(logFile);
