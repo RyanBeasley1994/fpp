@@ -14,33 +14,27 @@
 extern char fileData[65536];
 
 pthread_t pixelnetDMXthread;
-char PixelnetDMXcontrolHeader[] = {0x55,0x55,0x55,0x55,0x55,0xCC};
-char PixelnetDMXdataHeader[] = {0xCC,0xCC,0xCC,0xCC,0xCC,0x55};
-
+char PixelnetDMXHeader[] = {0xCC,0x55,0xCC,0x55,0xCC,0};
 
 char pixelnetDMXhasBeenSent = 0;
 char sendPixelnetDMXdata = 0;
 
+char * pixelnetDMXFile = "/home/pi/media/pixelnetDMX";
 PixelnetDMXentry pixelnetDMX[MAX_PIXELNET_DMX_PORTS];
 int pixelnetDMXcount =0;
 
 char bufferPixelnetDMX[PIXELNET_DMX_BUF_SIZE]; 
 
-void CreatePixelnetDMXfile(const char * file)
+void CreatePixelnetDMXfile(char * file)
 {
-	FILE *fp;
+  FILE *fp;
 	char settings[16];
 	char command[16];
 	int i;
 	int startChannel=1;
-	fp = fopen(file, "w");
-	if ( ! fp )
-	{
-		LogWrite("Error: Unable to create pixelnet file.\n");
-		exit(EXIT_FAILURE);
-	}
+  fp = fopen(file, "w");
 	LogWrite("Creating file: %s\n",file);
-
+		
 	for(i=0;i<MAX_PIXELNET_DMX_PORTS;i++,startChannel+=4096)
 	{
 		if(i==MAX_PIXELNET_DMX_PORTS-1)
@@ -75,7 +69,8 @@ void InitializePixelnetDMX()
 void SendPixelnetDMX(char sendBlankingData)
 {
 	int i;
-	memcpy(bufferPixelnetDMX,PixelnetDMXdataHeader,PIXELNET_HEADER_SIZE);
+	memcpy(bufferPixelnetDMX,PixelnetDMXHeader,PIXELNET_HEADER_SIZE);
+	bufferPixelnetDMX[PIXELNET_DMX_COMMAND_INDEX]=PIXELNET_DMX_COMMAND_DATA;
 	if(sendBlankingData)
 	{
 		memset(&bufferPixelnetDMX[PIXELNET_HEADER_SIZE],0,PIXELNET_DMX_DATA_SIZE);
@@ -98,7 +93,8 @@ void SendPixelnetDMXConfig()
 {
 	int i,index;
 	memset(bufferPixelnetDMX,0,PIXELNET_DMX_BUF_SIZE);
-	memcpy(bufferPixelnetDMX,PixelnetDMXcontrolHeader,PIXELNET_HEADER_SIZE);
+	memcpy(bufferPixelnetDMX,PixelnetDMXHeader,PIXELNET_HEADER_SIZE);
+	bufferPixelnetDMX[PIXELNET_DMX_COMMAND_INDEX]=PIXELNET_DMX_COMMAND_CONFIG;
 	index = PIXELNET_HEADER_SIZE;
 	for(i=0;i<pixelnetDMXcount;i++)
 	{
@@ -117,7 +113,7 @@ void LoadPixelnetDMXsettingsFromFile()
   FILE *fp;
   char buf[512];
   char *s;
-  fp = fopen((const char *)getPixelnetFile(), "r");
+  fp = fopen(pixelnetDMXFile, "r");
   LogWrite("Opening PixelnetDMX File\n");
   if (fp == NULL) 
   {

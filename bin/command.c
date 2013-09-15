@@ -4,9 +4,6 @@
 #include "schedule.h"
 #include "playList.h"
 #include "mpg123.h"
-#include "e131bridge.h"
-#include "settings.h"
-
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <stdio.h>
@@ -19,17 +16,20 @@
 #include <stdlib.h>
 
 extern int FPPstatus;
+extern int FPPmode;
+
 
 extern PlaylistDetails playlistDetails;
 
 extern struct mpg123_type mpg123;
+extern char MPG123volume[4];
+
 extern int E131secondsElasped;
 extern int E131secondsRemaining;
 extern int numberOfSecondsPaused;
-extern PlaylistDetails playlistDetails;
 
  char command[256];
- char response[1056];
+ char response[256];
  int socket_fd;
  struct sockaddr_un server_address;
  struct sockaddr_un client_address;
@@ -83,143 +83,129 @@ extern PlaylistDetails playlistDetails;
   void ProcessCommand()
   {
     char *s;
+		int volume;
 		char NextScheduleStartText[64];
 		char NextPlaylist[128];
+		GetNextScheduleStartText(NextScheduleStartText);
+		GetNextPlaylistText(NextPlaylist);
     switch(command[0])
     {
-			case 's':
-				GetNextScheduleStartText(NextScheduleStartText);
-				GetNextPlaylistText(NextPlaylist);
-				if(FPPstatus==FPP_STATUS_IDLE)
+    case 's':
+      if(FPPstatus==FPP_STATUS_IDLE)
+      {
+        sprintf(response,"%d,%d,%s,%s\n",FPPmode,FPPstatus,NextPlaylist,NextScheduleStartText);
+      }
+      else
+      {
+				if(playlistDetails.playList[playlistDetails.currentPlaylistEntry].cType == 'b' || playlistDetails.playList[playlistDetails.currentPlaylistEntry].cType == 'm')
 				{
-					sprintf(response,"%d,%d,%d,%s,%s\n",getFPPmode(),0,getVolume(),NextPlaylist,NextScheduleStartText);
+					sprintf(response,"%d,%d,%s,%s,%c,%s,%s,%d,%d,%d,%d,%s,%s\n",
+			  					FPPmode,FPPstatus,MPG123volume,playlistDetails.currentPlaylist,
+									playlistDetails.playList[playlistDetails.currentPlaylistEntry].cType,
+									playlistDetails.playList[playlistDetails.currentPlaylistEntry].seqName,
+									playlistDetails.playList[playlistDetails.currentPlaylistEntry].songName,
+									playlistDetails.currentPlaylistEntry+1,playlistDetails.playListCount,
+									(int)mpg123.seconds,(int)mpg123.secondsleft,NextPlaylist,NextScheduleStartText);
+				}
+				else if (playlistDetails.playList[playlistDetails.currentPlaylistEntry].cType == 's')
+				{
+					sprintf(response,"%d,%d,%s,%s,%c,%s,%s,%d,%d,%d,%d,%s,%s\n",FPPmode,FPPstatus,MPG123volume,
+        					playlistDetails.currentPlaylist,playlistDetails.playList[playlistDetails.currentPlaylistEntry].cType,
+									playlistDetails.playList[playlistDetails.currentPlaylistEntry].seqName,playlistDetails.playList[playlistDetails.currentPlaylistEntry].songName,
+									playlistDetails.currentPlaylistEntry+1,playlistDetails.playListCount,E131secondsElasped,E131secondsRemaining,
+				  				NextPlaylist,NextScheduleStartText);
 				}
 				else
-				{
-					if(playlistDetails.playList[playlistDetails.currentPlaylistEntry].cType == 'b' || playlistDetails.playList[playlistDetails.currentPlaylistEntry].cType == 'm')
-					{
-						sprintf(response,"%d,%d,%d,%s,%c,%s,%s,%d,%d,%d,%d,%s,%s\n",
-										getFPPmode(),FPPstatus,getVolume(),playlistDetails.currentPlaylist,
-										playlistDetails.playList[playlistDetails.currentPlaylistEntry].cType,
-										playlistDetails.playList[playlistDetails.currentPlaylistEntry].seqName,
-										playlistDetails.playList[playlistDetails.currentPlaylistEntry].songName,
-										playlistDetails.currentPlaylistEntry+1,playlistDetails.playListCount,
-										(int)mpg123.seconds,(int)mpg123.secondsleft,NextPlaylist,NextScheduleStartText);
-					}
-					else if (playlistDetails.playList[playlistDetails.currentPlaylistEntry].cType == 's')
-					{
-						sprintf(response,"%d,%d,%d,%s,%c,%s,%s,%d,%d,%d,%d,%s,%s\n",getFPPmode(),FPPstatus,getVolume(),
-										playlistDetails.currentPlaylist,playlistDetails.playList[playlistDetails.currentPlaylistEntry].cType,
-										playlistDetails.playList[playlistDetails.currentPlaylistEntry].seqName,playlistDetails.playList[playlistDetails.currentPlaylistEntry].songName,
-										playlistDetails.currentPlaylistEntry+1,playlistDetails.playListCount,E131secondsElasped,E131secondsRemaining,
-										NextPlaylist,NextScheduleStartText);
-					}
-					else
-					{			
-						sprintf(response,"%d,%d,%d,%s,%c,%s,%s,%d,%d,%d,%d,%s,%s\n",getFPPmode(),FPPstatus,getVolume(),playlistDetails.currentPlaylist,
-										playlistDetails.playList[playlistDetails.currentPlaylistEntry].cType,
-										playlistDetails.playList[playlistDetails.currentPlaylistEntry].seqName,
-										playlistDetails.playList[playlistDetails.currentPlaylistEntry].songName,	
-										playlistDetails.currentPlaylistEntry+1,playlistDetails.playListCount,
-										numberOfSecondsPaused,
-										(int)playlistDetails.playList[playlistDetails.currentPlaylistEntry].pauselength-numberOfSecondsPaused,
-										NextPlaylist,NextScheduleStartText);
-					}
+				{			
+					sprintf(response,"%d,%d,%s,%s,%c,%s,%s,%d,%d,%d,%d,%s,%s\n",FPPmode,FPPstatus,MPG123volume,playlistDetails.currentPlaylist,
+									playlistDetails.playList[playlistDetails.currentPlaylistEntry].cType,
+									playlistDetails.playList[playlistDetails.currentPlaylistEntry].seqName,
+									playlistDetails.playList[playlistDetails.currentPlaylistEntry].songName,	
+									playlistDetails.currentPlaylistEntry+1,playlistDetails.playListCount,
+									numberOfSecondsPaused,
+									(int)playlistDetails.playList[playlistDetails.currentPlaylistEntry].pauselength-numberOfSecondsPaused,
+									NextPlaylist,NextScheduleStartText);
 				}
-				break; 
-			case 'p':
-				if(FPPstatus==FPP_STATUS_PLAYLIST_PLAYING || FPPstatus==FPP_STATUS_STOPPING_GRACEFULLY)
-				{
-					StopPlaylistNow();
-				}
-				sleep(1);
-	
-				s = strtok(command,",");
-				s = strtok(NULL,",");
-				strcpy((char*)playlistDetails.currentPlaylistFile,s);
-				s = strtok(NULL,",");
-				playlistDetails.currentPlaylistEntry = atoi(s);
-				playlistDetails.repeat = 1 ;
-				playlistDetails.playlistStarting=1;
-				FPPstatus = FPP_STATUS_PLAYLIST_PLAYING;
-				sprintf(response,"%d,Playlist Started,,,,,,,,,,\n",COMMAND_SUCCESS);
-				break;
-			case 'P':
-				if(FPPstatus==FPP_STATUS_PLAYLIST_PLAYING || FPPstatus==FPP_STATUS_STOPPING_GRACEFULLY)
-				{
-					StopPlaylistNow();
-				}
-				sleep(1);
-	
-				s = strtok(command,",");
-				s = strtok(NULL,",");
-				strcpy((char*)playlistDetails.currentPlaylistFile,s);
-				s = strtok(NULL,",");
-				playlistDetails.currentPlaylistEntry = atoi(s);
-				playlistDetails.repeat = 0;
-				playlistDetails.playlistStarting=1;
-				FPPstatus = FPP_STATUS_PLAYLIST_PLAYING;
-				sprintf(response,"%d,Playlist Started,,,,,,,,,,\n",COMMAND_SUCCESS);
-				break;
-			case 'S':
-				if(FPPstatus==FPP_STATUS_PLAYLIST_PLAYING)
-				{
-					playlistDetails.ForceStop = 1;
-					StopPlaylistGracefully();
-					sprintf(response,"%d,Playlist Stopping Gracefully,,,,,,,,,,\n",COMMAND_SUCCESS);
-				}
-				else
-				{
-					sprintf(response,"%d,Not playing,,,,,,,,,,\n",COMMAND_FAILED);
-				}
-				break;
-			case 'd':
-				if(FPPstatus==FPP_STATUS_PLAYLIST_PLAYING || FPPstatus==FPP_STATUS_STOPPING_GRACEFULLY)
-				{
-					playlistDetails.ForceStop = 1;
-					StopPlaylistNow();
-					sprintf(response,"%d,Playlist Stopping Now,,,,,,,,,,\n",COMMAND_SUCCESS);
-				}
-				else
-				{
-					sprintf(response,"%d,Not playing,,,,,,,,,,\n",COMMAND_FAILED);
-				}
-				break;
-			case 'R':
-				if(FPPstatus==FPP_STATUS_IDLE)
-				{
-					LoadCurrentScheduleInfo();
-				}
-				LoadNextScheduleInfo();
-				
-				
-				sprintf(response,"%d,Reloading Schedule,,,,,,,,,,\n",COMMAND_SUCCESS);
-				break;
-	
-			case 'v':
-				s = strtok(command,",");
-				s = strtok(NULL,",");
-				setVolume(atoi(s));
-				MPG_SetVolume(getVolume());
-				sprintf(response,"%d,Setting Volume,,,,,,,,,,\n",COMMAND_SUCCESS);
-				break;
-	
-			case 'w':
-				LogWrite("Sending Pixelnet DMX info\n");
-				SendPixelnetDMXConfig();
-				break;
-	
-			case 'r':
-				WriteBytesReceivedFile();
-				sprintf(response,"true\n");
-				break;
-			default:
-				sprintf(response,"Invalid command\n");
-		}
-  	bytes_sent = sendto(socket_fd, response, strlen(response), 0,
+      }
+      break; 
+    case 'p':
+      if(FPPstatus==FPP_STATUS_PLAYLIST_PLAYING || FPPstatus==FPP_STATUS_STOPPING_GRACEFULLY)
+      {
+        StopPlaylistNow();
+      }
+      sleep(1);
+
+      s = strtok(command,",");
+      s = strtok(NULL,",");
+      strcpy((char*)playlistDetails.currentPlaylistFile,s);
+      s = strtok(NULL,",");
+		  playlistDetails.currentPlaylistEntry = atoi(s);
+			playlistDetails.playlistStarting=1;
+			FPPstatus = FPP_STATUS_PLAYLIST_PLAYING;
+      sprintf(response,"%d,Playlist Started,,,,,,,,,,\n",COMMAND_SUCCESS);
+      break;
+    case 'P':
+      if(FPPstatus==FPP_STATUS_PLAYLIST_PLAYING || FPPstatus==FPP_STATUS_STOPPING_GRACEFULLY)
+      {
+        StopPlaylistNow();
+      }
+      sleep(1);
+
+      s = strtok(command,",");
+      s = strtok(NULL,",");
+      strcpy((char*)playlistDetails.currentPlaylistFile,s);
+      s = strtok(NULL,",");
+		  playlistDetails.currentPlaylistEntry = atoi(s);
+			playlistDetails.playlistStarting=1;
+      FPPstatus = FPP_STATUS_STOPPING_GRACEFULLY;
+      sprintf(response,"%d,Playlist Started,,,,,,,,,,\n",COMMAND_SUCCESS);
+      break;
+    case 'S':
+      if(FPPstatus==FPP_STATUS_PLAYLIST_PLAYING)
+      {
+        StopPlaylistGracefully();
+        sprintf(response,"%d,Playlist Stopping Gracefully,,,,,,,,,,\n",COMMAND_SUCCESS);
+      }
+      else
+      {
+        sprintf(response,"%d,Not playing,,,,,,,,,,\n",COMMAND_FAILED);
+      }
+      break;
+    case 'd':
+      if(FPPstatus==FPP_STATUS_PLAYLIST_PLAYING || FPPstatus==FPP_STATUS_STOPPING_GRACEFULLY)
+      {
+        StopPlaylistNow();
+        sprintf(response,"%d,Playlist Stopping Now,,,,,,,,,,\n",COMMAND_SUCCESS);
+      }
+      else
+      {
+        sprintf(response,"%d,Not playing,,,,,,,,,,\n",COMMAND_FAILED);
+      }
+      break;
+    case 'R':
+			if(FPPstatus==FPP_STATUS_IDLE)
+      {
+				LoadCurrentScheduleInfo();
+			}
+			LoadNextScheduleInfo();
+			
+			
+      sprintf(response,"%d,Reloading Schedule,,,,,,,,,,\n",COMMAND_SUCCESS);
+      break;
+
+    case 'v':
+      s = strtok(command,",");
+      s = strtok(NULL,",");
+			strcpy(MPG123volume,s);
+			MPG_SetVolume(MPG123volume);
+      sprintf(response,"%d,Setting Volume,,,,,,,,,,\n",COMMAND_SUCCESS);
+      break;
+    }
+    bytes_sent = sendto(socket_fd, response, strlen(response), 0,
                           (struct sockaddr *) &(client_address), sizeof(struct sockaddr_un));
-	LogWrite("%c %s", command[0], response);
+     //LogWrite(response);
   }
+
 
   void exit_handler(int signum)
 	{

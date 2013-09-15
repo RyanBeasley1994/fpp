@@ -28,11 +28,9 @@ typedef struct{
 	int playListCount;
 	int currentPlaylistEntry;
 	int StopPlaylist;
-	int ForceStop;
 	int playlistStarting;
 	int first;
 	int last;
-	int repeat;
 }PlaylistDetails;
 
 void CalculateNextPlayListEntry();

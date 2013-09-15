@@ -8,7 +8,6 @@
 #include "schedule.h"
 #include "pixelnetDMX.h"
 #include "e131bridge.h"
-#include "settings.h"
 
 #include <unistd.h>
 #include <stdio.h>
@@ -21,54 +20,28 @@
 
 pid_t pid, sid;
 int FPPstatus=FPP_STATUS_IDLE;
+int FPPmode=PLAYER_MODE;
 
-int main(int argc, char *argv[])
+//Settings 
+char * SettingsFile = "/home/pi/media/settings";
+extern char MPG123volume[4];
+
+int main()
 {
-	// Parse our arguments first, override any defaults
-	parseArguments(argc, argv);
-
-	printSettings();
-
-	// Now load things from our settings file, only load
-	// things that haven't already been set by the command
-	// line which should take presidence
-	loadSettings(getSettingsFile());
-
-	printSettings();
-
-	// Start functioning
-	if (getDaemonize())
-	    CreateDaemon();
-
-	CheckExistanceOfDirectoriesAndFiles();
-
-	E131_Initialize();
-
-	InitializePixelnetDMX();
-
-	Command_Initialize();
-
-	if (getFPPmode() == PLAYER_MODE)
+  CreateDaemon();
+	if(FPPmode == PLAYER_MODE)
 	{
-		LogWrite("Starting Player Process\n");
 		PlayerProcess();
-	}
-	else if (getFPPmode() == BRIDGE_MODE)
-	{
-		LogWrite("Starting Bridge Process\n");
-		Bridge_Process();
 	}
 	else
 	{
-		LogWrite("Invalid mode, quitting\n");
+		Bridge_Process();
 	}
-
-	return 0;
+  return 0;
 }
 
 void PlayerProcess(void)
 {
-#ifndef NOROOT
 	struct sched_param param;
 	param.sched_priority = 99;
 	if (sched_setscheduler(0, SCHED_FIFO, & param) != 0) 
@@ -76,8 +49,12 @@ void PlayerProcess(void)
 		perror("sched_setscheduler");
 		exit(EXIT_FAILURE);  
 	}
-#endif
+	CheckExistanceOfDirectoriesAndFiles();
+	ReadFPPsettings(SettingsFile);
   MusicInitialize();
+  E131_Initialize();
+  Command_Initialize();
+	InitializePixelnetDMX();
   LogWrite("Initialize E131 done\n");
 	CheckIfShouldBePlayingNow();
   while(1)
@@ -130,4 +107,87 @@ void CreateDaemon(void)
   close(STDIN_FILENO);
   close(STDOUT_FILENO);
   close(STDERR_FILENO);
+}
+
+int ReadFPPsettings(char const * file)
+{
+  FILE *fp;
+  int listIndex=0;
+  char buf[128];
+  char *s;
+  LogWrite("Opening Settings Now %s\n",file);
+  fp = fopen(file, "r");
+  if (fp == NULL) 
+  {
+    LogWrite("Could not open settings file %s\n",file);
+  	return 0;
+  }
+	// Parse Settings
+	fgets(buf, 128, fp);
+  s=strtok(buf,",");
+  FPPmode = atoi(s);
+  s = strtok(NULL,",");
+	if(atoi(s) > 100)
+	{
+		strcpy(MPG123volume,"75");
+	}
+	else
+	{
+		strcpy(MPG123volume,s);
+	}
+	LogWrite("Mode=%d Volume=%s\n",FPPmode,MPG123volume);
+  fclose(fp);
+}
+
+void CreateSettingsFile(char * file)
+{
+  FILE *fp;
+	char * settings = "0,100";			// Mode, Volume
+	char command[32];
+  fp = fopen(file, "w");
+	LogWrite("Creating file: %s\n",file);
+	fwrite(settings, 1, 4, fp);
+	fclose(fp);
+	sprintf(command,"sudo chmod 777 %s",file);
+	system(command);
+}
+
+void CheckExistanceOfDirectoriesAndFiles()
+{
+	if(!DirectoryExists("/home/pi/media"))
+	{
+		mkdir("/home/pi/media", 0777);
+		LogWrite("Directory FPP Does Not Exist\n");
+	}
+	if(!DirectoryExists("/home/pi/media/music"))
+	{
+		mkdir("/home/pi/media/music", 0777);
+		LogWrite("Directory Music Does Not Exist\n");
+	}
+	if(!DirectoryExists("/home/pi/media/sequences"))
+	{
+		mkdir("/home/pi/media/sequences", 0777);
+		LogWrite("Directory sequences Does Not Exist\n");
+	}
+	if(!DirectoryExists("/home/pi/media/playlists"))
+	{
+		mkdir("/home/pi/media/playlists", 0777);
+		LogWrite("Directory playlists Does Not Exist\n");
+	}
+	if(!FileExists("/home/pi/media/universes"))
+	{
+		system("touch /home/pi/media/universes");
+	}
+	if(!FileExists("/home/pi/media/pixelnetDMX"))
+	{
+		CreatePixelnetDMXfile("/home/pi/media/pixelnetDMX");
+	}
+	if(!FileExists("/home/pi/media/schedule"))
+	{
+		system("touch /home/pi/media/schedule");
+	}
+	if(!FileExists(SettingsFile))
+	{
+		CreateSettingsFile(SettingsFile);
+	}
 }

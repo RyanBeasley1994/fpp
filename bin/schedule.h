@@ -27,12 +27,12 @@
 typedef struct{
 		char enable;
 		char playList[128];
-    int dayIndex;
-    int startHour;
-		int startMinute;
+    char dayIndex;
+    char startHour;
+		char startMinute;
 		int startSecond;
-    int endHour;
-		int endMinute;
+    char endHour;
+		char endMinute;
 		int endSecond;
 		char repeat;
     int weeklySecondCount;

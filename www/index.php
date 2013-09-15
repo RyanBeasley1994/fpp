@@ -3,7 +3,7 @@
 <head>
 <?php	include 'common/menuHead.inc'; ?>
 <script type="text/javascript" src="js/fpp.js"></script>
-<script src="http://code.jquery.com/jquery-1.9.1.js"></script>
+ <script src="http://code.jquery.com/jquery-1.9.1.js"></script>
 <script src="http://code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
 <script>
     $(function() {
@@ -29,7 +29,7 @@
 				//Config
 				range: "min",
 				min: 1,
-				//value: 35,
+				value: 35,
 			});
 			
 			
@@ -95,28 +95,17 @@
 
 
 </head>
-<body onLoad="GetFPPDmode();StatusPopulatePlaylists();setInterval(updateFPPStatus,1000);GetVolume();">
+<body onLoad="GetFPPstatus();StatusPopulatePlaylists();setInterval(updateFPPStatus,1000);">
 <div id="bodyWrapper">
 <?php
 	include 'menu.inc';
   ?>
 <br/>
-<div id="programControl" class="settings">
+<div id = "programControl">
   <fieldset>
     <legend>Program Control</legend>
     <div id="daemonControl">
       <table width= "100%">
-        <tr>
-          <td width = "20%"> FPPD Mode: </td>
-          <td width = "25%"><select id="selFPPDmode"  onChange="SetFPPDmode();">
-          										<option id="optFPPDmode_Player" value="0">
-                              
-          										Player Mode</option>
-          										<option id="optFPPDmode_Bridge" value="1">
-          										Bridge Mode</option>
-          <td width = "40%">&nbsp;</td>
-          <td width = "15%">&nbsp;</td>
-        </tr>
         <tr>
           <td width = "20%"> FPPD Status: </td>
           <td id = "daemonStatus" width = "25%"></td>
@@ -130,11 +119,6 @@
       </table>
     </div>
     <hr>
-    <div id="bytesTransferred"><H3>Bytes Transferred</H3>
-    <div id="bridgeStatistics1"></div>
-    <div id="bridgeStatistics2"></div>
-    <div class="clear"></div>
-		</div>
     <div id="playerStatus">
       <table  width= "100%">
         <tr>
@@ -148,12 +132,12 @@
       <div id = "startPlaylistControls">
         <table width="100%">
           <tr>
-            <td width="20%">Load this playlist:</td>
-            <td  width="50%"><select id="selStartPlaylist" name="selStartPlaylist" size="1" onClick="SelectStatusPlaylistEntryRow();PopulateStatusPlaylistEntries(true,'',true);" onChange="PopulateStatusPlaylistEntries(true,'',true);"></select></td>
+            <td width="20%">Start this playlist</td>
+            <td  width="25%"><select id="selStartPlaylist" name="selStartPlaylist" size="1" onClick="PopulateStatusPlaylistEntries(true,'',true);" onChange="PopulateStatusPlaylistEntries(true,'',true);"></select></td>
             <td  width="15%"><input type="checkbox" id="chkRepeat">
               Repeat
               </input></td>
-            <td  width="15%">     	
+            <td  width="40%">     	
 	         <div id="slider"></div> <!-- the Slider -->
            <span class="volume"></span> <!-- Volume -->
 

@@ -1,15 +1,14 @@
 <?php
-require_once('config.php');
 require_once('playlistentry.php');
 //require_once('pi_functions.php');
-
 $a = session_id();
-if(empty($a))
+
+if(empty($a)) session_start();
 {
 	session_start();
 }
 $_SESSION['session_id'] = session_id();
-//ini_set('display_errors', 'On');
+ini_set('display_errors', 'On');
 error_reporting(E_ALL);
 SetSetting("settings.xml","mysetting","hellow2");
 
@@ -47,6 +46,13 @@ function SetSetting($file,$varName,$varValue)
 <html xmlns="http://www.w3.org/1999/xhtml">
     <head>
     <?php	include 'common/menuHead.inc'; ?>
+    <?php
+ini_set('display_errors', 'On');
+error_reporting(E_ALL);
+
+
+
+?>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <link rel="stylesheet" href="http://code.jquery.com/ui/1.10.2/themes/smoothness/jquery-ui.css" />
     <script type="text/javascript" src="js/fpp.js"></script>
@@ -134,9 +140,8 @@ $(document).ready(function () {
 <?php 
   function PrintMusicOptions()
   {
-	  global $musicDirectory;
 		echo "<select id=\"selAudio\" size=\"1\">";
-    foreach(scandir($musicDirectory) as $songFile) 
+    foreach(scandir('/home/pi/media/music') as $songFile) 
     {
       if($songFile != '.' && $songFile != '..')
       {
@@ -148,9 +153,8 @@ $(document).ready(function () {
   
   function PrintSequenceOptions()
   {
-	  global $sequenceDirectory;
 		echo "<select id=\"selSequence\" size=\"1\">";
-    foreach(scandir($sequenceDirectory) as $seqFile) 
+    foreach(scandir('/home/pi/media/sequences') as $seqFile) 
     {
       if($seqFile != '.' && $seqFile != '..')
       {
@@ -222,10 +226,10 @@ $(document).ready(function () {
     <div id="createPlaylistItems">
           <table id="tblCreatePlaylist">
         <tr id="rowCreatePlaylistHeader">
-              <td width="5%" id="colPlaylistNumber" class="textRight">#</td>
+              <td width="3%" id="colPlaylistNumber" class="textRight">#</td>
               <td width="42%">Media File/Pause</td>
               <td width="42%">Sequence</td>
-              <td width="11%">First/Last</td>
+              <td width="13%">First/Last</td>
             </tr>
       </table>
           <table id="tblCreatePlaylistEntries" width="100%">
@@ -233,7 +237,7 @@ $(document).ready(function () {
             </tbody>
       </table>
         </div>
-    <span style="font-size:12px; font-family:Arial; margin-left:15px;">(Drag entry to reposition) </span>
+    <span style="font-size:10px; font-family:Arial; margin-left:15px;">(Drag entry to reposition) </span>
   </fieldset>
     </div>
 </div>

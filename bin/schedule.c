@@ -4,8 +4,6 @@
 #include "command.h"
 #include "playList.h"
 #include "mpg123.h"
-#include "settings.h"
-
 #include <time.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -15,6 +13,7 @@
 
 
 
+char * scheduleFile = "/home/pi/media/schedule";
 ScheduleEntry Schedule[MAX_SCHEDULE_ENTRIES];
 SchedulePlaylistDetails currentSchedulePlaylist,nextSchedulePlaylist;
 int ScheduleEntryCount=0;
@@ -53,10 +52,7 @@ void ScheduleProc()
       {
         LoadNextScheduleInfo();
       }
-			if(Schedule[currentSchedulePlaylist.ScheduleEntryIndex].repeat)
-			{
-	      PlayListStopCheck();
-			}
+      PlayListStopCheck();
       break;
     default:
       break;
@@ -73,9 +69,7 @@ void CheckIfShouldBePlayingNow()
   LoadScheduleFromFile();
   for(i=0;i<ScheduleEntryCount;i++)
   {
-		// only check schedule entries that are enabled and set to repeat.
-		// Do not start non repeatable entries
-		if(Schedule[i].enable && Schedule[i].repeat)
+		if(Schedule[i].enable)
 		{
 			for(j=0;j<Schedule[i].weeklySecondCount;j++)
 			{
@@ -89,9 +83,15 @@ void CheckIfShouldBePlayingNow()
 					NextScheduleHasbeenLoaded = 0;
 		      strcpy((void*)playlistDetails.currentPlaylistFile,Schedule[currentSchedulePlaylist.ScheduleEntryIndex].playList);
 				  playlistDetails.currentPlaylistEntry=0;
-					playlistDetails.repeat = Schedule[currentSchedulePlaylist.ScheduleEntryIndex].repeat;
 		  		playlistDetails.playlistStarting=1;
-      		FPPstatus = FPP_STATUS_PLAYLIST_PLAYING;
+		  		if (Schedule[currentSchedulePlaylist.ScheduleEntryIndex].repeat == 0)
+		  		{
+	      		FPPstatus = FPP_STATUS_STOPPING_GRACEFULLY;
+		  		}
+		  		else
+		  		{
+	      		FPPstatus = FPP_STATUS_PLAYLIST_PLAYING;
+		  		}
 				}				
 			}
 		}
@@ -145,6 +145,7 @@ void LoadNextScheduleInfo()
 
 void SetScheduleEntrysWeeklyStartAndEndSeconds(ScheduleEntry * entry)
 {
+  int retCount;
 	switch(entry->dayIndex)
   {
 		case INX_SUN:
@@ -254,9 +255,15 @@ void PlayListLoadCheck()
       NextScheduleHasbeenLoaded = 0;
       strcpy((void*)playlistDetails.currentPlaylistFile,Schedule[currentSchedulePlaylist.ScheduleEntryIndex].playList);
 		  playlistDetails.currentPlaylistEntry=0;
-			playlistDetails.repeat = Schedule[currentSchedulePlaylist.ScheduleEntryIndex].repeat;
 		  playlistDetails.playlistStarting=1;
-      FPPstatus = FPP_STATUS_PLAYLIST_PLAYING;
+		  if (Schedule[currentSchedulePlaylist.ScheduleEntryIndex].repeat == 0)
+		  {
+	      FPPstatus = FPP_STATUS_STOPPING_GRACEFULLY;
+		  }
+		  else
+		  {
+	      FPPstatus = FPP_STATUS_PLAYLIST_PLAYING;
+		  }
     }
   }
 }
@@ -296,8 +303,8 @@ void LoadScheduleFromFile()
   char *s;
   ScheduleEntryCount=0;
   int day;
-  LogWrite("Opening File Now %s\n",getScheduleFile());
-  fp = fopen((const char *)getScheduleFile(), "r");
+ // LogWrite("Opening File Now %s\n",scheduleFile);
+  fp = fopen(scheduleFile, "r");
   if (fp == NULL) 
   {
 		return;
@@ -471,7 +478,7 @@ void GetDayTextFromDayIndex(int index,char * txt)
 			strcpy(txt,"Fri/Sat");
 			break;	
 		default:
-			strcpy(txt, "Error\0");
+			strcpy(txt, "Error");
 			break;	
 	}
 }

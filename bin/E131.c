@@ -2,8 +2,6 @@
 #include "E131.h"
 #include "playList.h"
 #include "mpg123.h"
-#include "settings.h"
-
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/time.h>
@@ -15,7 +13,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
-#include <math.h>
+#include <math.h> 
 
 // external variables
 extern struct mpg123_type mpg123;
@@ -30,13 +28,15 @@ extern char pixelnetDMXhasBeenSent;
 extern char sendPixelnetDMXdata;
 
 
+char * universeFile = "/home/pi/media/universes";
 int E131status = E131_STATUS_IDLE;
 
 struct sockaddr_in    localAddress;
 struct sockaddr_in    E131address[MAX_UNIVERSE_COUNT];
 int                   sendSocket;
 
-char currentSequenceFile[128];//FIXME
+char * sequenceFolder = "/home/pi/media/sequences/";
+char currentSequenceFile[128];
 
 
 const char  E131header[] = {
@@ -82,7 +82,7 @@ int syncedToMusic=0;
 void E131_Initialize()
 {
   usTimerValue = (unsigned int)(((float)1/(float)RefreshRate) * ((float)990000));
-//  usTimerValue = (unsigned int)(((float)1/(float)RefreshRate) * ((float)1200000));
+//  usTimerValue = (unsigned int)(((float)1/(float)RefreshRate) * ((float)1100000));
 	E131sequenceNumber=1;
   GetLocalWiredIPaddress(LocalAddress);
 	LoadUniversesFromFile();
@@ -93,18 +93,15 @@ void GetLocalWiredIPaddress(char * IPaddress)
 {
 	FILE *fp;
   size_t len;
-	fp = popen("/sbin/ifconfig|grep inet|head -1|sed 's/\\:/ /'|awk '{print $3}'", "r");
- 	
-	if (fp == NULL) 
+	fp = popen("sudo ip addr show scope global | grep inet | cut -d' ' -f6 | cut -d/ -f1", "r");
+ 	if (fp == NULL) 
 	{
-		LogWrite("Error getting Local IP Adress. popen returned %d\n",fp);
    	exit;
  	}
 	len = fread(IPaddress,1,64,fp);
 	// Remove '\n' by replacing with '\0'
 	IPaddress[len-1] = '\0';
-	LogWrite("IP=%s\n",IPaddress);
- 	pclose(fp);
+  	pclose(fp);
 }
 
 
@@ -117,7 +114,7 @@ int E131_InitializeNetwork()
   sendSocket = socket(AF_INET, SOCK_DGRAM, 0);
   if (sendSocket < 0) 
   {
-    LogWrite("Error opening datagram socket\n");
+    LogWrite("Error opening datagram sockets\n");
 
     exit(1);
   }
@@ -127,7 +124,7 @@ int E131_InitializeNetwork()
   localAddress.sin_addr.s_addr = inet_addr(LocalAddress);
   if(bind(sendSocket, (struct sockaddr *) &localAddress, sizeof(struct sockaddr_in)) == -1)
   {
-    LogWrite("Error in bind:errno=%d\n",errno);
+    LogWrite("Error in bind\n");
   } 
 
   /* Disable loopback so I do not receive my own datagrams. */
@@ -171,13 +168,11 @@ int E131_OpenSequenceFile(const char * file)
   {
     E131_CloseSequenceFile(); // Close if open
   }
-  strcpy(currentSequenceFile,(const char *)getSequenceDirectory());
-  strcat(currentSequenceFile,"/");
+  strcpy(currentSequenceFile,sequenceFolder);
   strcat(currentSequenceFile,file);
-  seqFile = fopen((const char *)currentSequenceFile, "r");
+  seqFile = fopen(currentSequenceFile, "r");
   if (seqFile == NULL) 
   {
-		LogWrite("Error opening sequence file: %s fopen returned %d\n",currentSequenceFile,seqFile);
     return 0;
   }
 	// Get Step Size
@@ -220,7 +215,7 @@ void E131_SetTimer(int us)
   tout_val.it_value.tv_sec = 0; 
   tout_val.it_value.tv_usec = us;
   setitimer(ITIMER_REAL, &tout_val,0);
-  signal(SIGALRM,(__sighandler_t)E131_Send);
+  signal(SIGALRM,E131_Send);            
 }
 
 void E131_Send()
@@ -329,11 +324,11 @@ void LoadUniversesFromFile()
   UniverseCount=0;
 	char active =0;
 
-  LogWrite("Opening File Now %s\n",getUniverseFile());
-  fp = fopen((const char *)getUniverseFile(), "r");
+  LogWrite("Opening File Now %s\n",universeFile);
+  fp = fopen(universeFile, "r");
   if (fp == NULL) 
   {
-    LogWrite("Could not open universe file %s\n",getUniverseFile());
+    LogWrite("Could not open universe file %s\n",universeFile);
   	return;
   }
   while(fgets(buf, 512, fp) != NULL)
@@ -375,35 +370,6 @@ void LoadUniversesFromFile()
   UniversesPrint();
 }
 
-void ResetBytesReceived()
-{
-	int i;
-  for(i=0;i<UniverseCount;i++)
-	{
-		universes[i].bytesReceived = 0;
-	}
-}
-
-	void WriteBytesReceivedFile()
-	{
-		int i;
-		FILE *file;
-		file = fopen((const char *)getBytesFile(), "w");
-		for(i=0;i<UniverseCount;i++)
-		{
-			if(i==UniverseCount-1)
-			{
-				fprintf(file, "%d,%d,%d,",universes[i].universe,universes[i].startAddress,universes[i].bytesReceived);
-			}
-			else
-			{
-				fprintf(file, "%d,%d,%d,\n",universes[i].universe,universes[i].startAddress,universes[i].bytesReceived);
-			}
-		}
-		fclose(file);
-	}
-
-
 void UniversesPrint()
 {
   int i=0;
@@ -411,7 +377,7 @@ void UniversesPrint()
   for(i=0;i<UniverseCount;i++)
   {
     LogWrite("%d:%d:%d:%d:%d  %s\n",
-                                         universes[i].active,
+                                          universes[i].active,
                                           universes[i].universe,
                                           universes[i].size,
                                           universes[i].startAddress,
