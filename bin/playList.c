@@ -4,7 +4,9 @@
 #include "command.h"
 #include "E131.h"
 #include "schedule.h"
-#include "ogg123.h"
+#include "mpg123.h"
+#include "settings.h"
+
 #include <unistd.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -16,12 +18,9 @@
 #include <sys/stat.h>
 #include <errno.h>
 
-char * playlistFolder = "/home/pi/media/playlists/";
-char * musicFolder2 = "/home/pi/media/music/";
-
 PlaylistDetails playlistDetails;
 extern unsigned long currentSequenceFileSize;
-char currentSequenceFile[128];
+char currentSequenceFile[128];//FIXME
 char * pl = "playlist1.lst";
 
 
@@ -30,8 +29,8 @@ extern int E131status;
 extern int MusicCommand;
 extern int MusicResponse;
 extern int MusicPlayerStatus;
-extern char currentSong[128];
-extern char nextSong[128];
+extern char currentSong[128];//FIXME
+extern char nextSong[128];//FIXME
 extern int lastSecond;
 extern int FPPstatus;
 
@@ -63,12 +62,11 @@ void CalculateNextPlayListEntry()
 	else
 	{	
 		maxEntryIndex = playlistDetails.last?playlistDetails.playListCount-1:playlistDetails.playListCount; 
+		//printf("Last=%d maxEntryIndex=%d\n", playlistDetails.last,maxEntryIndex); 
 		playlistDetails.currentPlaylistEntry++;
-		LogWrite("currentPlaylistEntry = %d Last=%d maxEntryIndex=%d repeat=%d \n",playlistDetails.currentPlaylistEntry, playlistDetails.last,maxEntryIndex,playlistDetails.repeat); 
-		if((playlistDetails.currentPlaylistEntry == maxEntryIndex) && !playlistDetails.repeat)
+		if((playlistDetails.currentPlaylistEntry == maxEntryIndex-1) && !playlistDetails.repeat)
 		{
-			LogWrite("\nStopping Gracefully\n");
-			playlistDetails.currentPlaylistEntry = PLAYLIST_STOP_INDEX;
+			FPPstatus = FPP_STATUS_STOPPING_GRACEFULLY;
 		}
  		else if(playlistDetails.currentPlaylistEntry >= maxEntryIndex)
 		{
@@ -87,11 +85,12 @@ int ReadPlaylist(char const * file)
   char buf[512];
   char *s;
   // Put together playlist file with default folder
-  strcpy((char*)playlistDetails.currentPlaylist,playlistFolder);
+  strcpy((char*)playlistDetails.currentPlaylist,(const char *)getPlaylistDirectory());
+  strcat((char*)playlistDetails.currentPlaylist,"/");
   strcat((char*)playlistDetails.currentPlaylist,file);
 
   LogWrite("Opening File Now %s\n",playlistDetails.currentPlaylist);
-  fp = fopen((char*)playlistDetails.currentPlaylist, "r");
+  fp = fopen((const char*)playlistDetails.currentPlaylist, "r");
   if (fp == NULL) 
   {
     LogWrite("Could not open playlist file %s\n",file);
@@ -146,7 +145,6 @@ int ReadPlaylist(char const * file)
 
 void PlayListPlayingLoop(void)
 {
-	LogWrite("Starting PlaylistPlaying loop\n");
   playlistDetails.StopPlaylist = 0;
 	playlistDetails.ForceStop = 0;
   playlistDetails.playListCount = ReadPlaylist((char*)playlistDetails.currentPlaylistFile);
@@ -171,15 +169,13 @@ void PlayListPlayingLoop(void)
       case PL_TYPE_BOTH:
         if(MusicPlayerStatus == IDLE_MPLAYER_STATUS)
         {
-					LogWrite("Play File Now \n");
           Play_PlaylistEntry();
         }
 				else
 				{
 		    	if(MusicPlayerStatus==PLAYING_MPLAYER_STATUS || MusicPlayerStatus==QUEUED_MPLAYER_STATUS)
 					{
-      			//MPG_UpdateStatus();
-						MusicProc();
+      			MPG_UpdateStatus();
     			}
 				}
         break;
@@ -192,9 +188,7 @@ void PlayListPlayingLoop(void)
 				{
 			    if(MusicPlayerStatus==PLAYING_MPLAYER_STATUS || MusicPlayerStatus==QUEUED_MPLAYER_STATUS)
   			  {
-						LogWrite("Play File Now 2 \n");
-      			//MPG_UpdateStatus();
-						MusicProc();
+      			MPG_UpdateStatus();
     			}
 				}
         break;
@@ -253,15 +247,15 @@ void Play_PlaylistEntry(void)
   CalculateNextPlayListEntry();
 	if( playlistDetails.currentPlaylistEntry==PLAYLIST_STOP_INDEX)
 	{
-		//if(FPPstatus == FPP_STATUS_STOPPING_GRACEFULLY)
-		//{ 
+		if(FPPstatus == FPP_STATUS_STOPPING_GRACEFULLY)
+		{ 
 			LogWrite("Changing Status to Stopping Gracefully\n"); 
 			playlistDetails.StopPlaylist = 1;
 			return;
-		//}
+		}
 	}
 
-	LogWrite("\nplayListCount=%d  CurrentPlaylistEntry = %d\n", playlistDetails.playListCount,playlistDetails.currentPlaylistEntry); 
+	LogWrite("playListCount=%d  CurrentPlaylistEntry = %d\n", playlistDetails.playListCount,playlistDetails.currentPlaylistEntry);
   switch(playlistDetails.playList[playlistDetails.currentPlaylistEntry].type)
   {
     case PL_TYPE_BOTH:
@@ -291,16 +285,13 @@ void Play_PlaylistEntry(void)
 
 void PlaylistPlaySong(void)
 {
-  LogWrite("Starting to Play\n");
-  strcpy(playlistDetails.playList[playlistDetails.currentPlaylistEntry].songFullPath,musicFolder2);
-  strcat(playlistDetails.playList[playlistDetails.currentPlaylistEntry].songFullPath,
-         playlistDetails.playList[playlistDetails.currentPlaylistEntry].songName);
-  oggPlaySong(playlistDetails.playList[playlistDetails.currentPlaylistEntry].songFullPath);
+  strcpy(currentSong,playlistDetails.playList[playlistDetails.currentPlaylistEntry].songName);
+	MPG_PlaySong();
 }
 
 void PlaylistStopSong(void)
 {
-	OGGstopSong();
+	MPG_StopSong();
 }
 
 

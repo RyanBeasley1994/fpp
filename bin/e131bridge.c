@@ -8,6 +8,8 @@
 #include <arpa/inet.h>
 #include <time.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 
 char unicastSocketCreated = 0;
@@ -36,7 +38,7 @@ extern char fileData[65536];
 			read_fd_set = active_fd_set;
 			if (select(FD_SETSIZE, &read_fd_set, NULL, NULL, &timeout) < 0)
       {
-       	LogWrite("Select failed\n");
+       	//LogWrite("Select failed\n");
        	return;
       }
 			if (FD_ISSET (sock, &read_fd_set))
@@ -48,7 +50,7 @@ extern char fileData[65536];
 					Bridge_StoreData(universe);
 				} 
 			}
-	    usleep(250);
+	    usleep(5);
 		}
 	}
 

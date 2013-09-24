@@ -1,3 +1,6 @@
+<?php
+require_once('config.php');
+?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
@@ -96,7 +99,7 @@ h2 {
   <br />
   <div id= "divSeq">
     <fieldset class="fs">
-      <legend> Sequence Files (.fseq) </legend>
+      <legend> Sequence Files </legend>
       <div id="divSeqData">
         <table id="tblSequences">
         </table>
@@ -109,7 +112,7 @@ h2 {
   </div>
   <div id= "divMusic">
     <fieldset  class="fs">
-      <legend> Music Files (.ogg) </legend>
+      <legend> Music Files </legend>
       <div id="divMusicData">
         <table id="tblMusic">
         </table>
@@ -124,7 +127,7 @@ h2 {
   <script type="text/javascript">
 $('#uploader_div').ajaxupload({
 	url:'upload.php',
-	remotePath:'/home/pi/media/upload/',
+	remotePath:'<?php global $mediaDirectory; echo $mediaDirectory; ?>upload/',
 	removeOnSuccess: true,
 	maxFileSize:'10000M',
 	chunkSize:1048576,
@@ -136,7 +139,7 @@ $('#uploader_div').ajaxupload({
 		GetSequenceFiles();
 		GetMusicFiles();
 	},
-	allowExt:['ogg','fseq']
+	allowExt:['mp3','fseq']
 });
 </script> 
 </div>

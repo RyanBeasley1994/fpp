@@ -115,6 +115,7 @@ void SendCommand(const char * com)
 {
  int max_timeout = 1000;
  int i=0;
+// LogWrite("Sending = %s\n",com);
  bytes_sent = sendto(socket_fd, com, strlen(com), 0,
                      (struct sockaddr *) &server_address,
                      sizeof(struct sockaddr_un));

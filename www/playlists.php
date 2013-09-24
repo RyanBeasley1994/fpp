@@ -1,14 +1,15 @@
 <?php
+require_once('config.php');
 require_once('playlistentry.php');
 //require_once('pi_functions.php');
-$a = session_id();
 
-if(empty($a)) session_start();
+$a = session_id();
+if(empty($a))
 {
 	session_start();
 }
 $_SESSION['session_id'] = session_id();
-ini_set('display_errors', 'On');
+//ini_set('display_errors', 'On');
 error_reporting(E_ALL);
 SetSetting("settings.xml","mysetting","hellow2");
 
@@ -46,13 +47,6 @@ function SetSetting($file,$varName,$varValue)
 <html xmlns="http://www.w3.org/1999/xhtml">
     <head>
     <?php	include 'common/menuHead.inc'; ?>
-    <?php
-ini_set('display_errors', 'On');
-error_reporting(E_ALL);
-
-
-
-?>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <link rel="stylesheet" href="http://code.jquery.com/ui/1.10.2/themes/smoothness/jquery-ui.css" />
     <script type="text/javascript" src="js/fpp.js"></script>
@@ -140,8 +134,9 @@ $(document).ready(function () {
 <?php 
   function PrintMusicOptions()
   {
+	  global $musicDirectory;
 		echo "<select id=\"selAudio\" size=\"1\">";
-    foreach(scandir('/home/pi/media/music') as $songFile) 
+    foreach(scandir($musicDirectory) as $songFile) 
     {
       if($songFile != '.' && $songFile != '..')
       {
@@ -153,8 +148,9 @@ $(document).ready(function () {
   
   function PrintSequenceOptions()
   {
+	  global $sequenceDirectory;
 		echo "<select id=\"selSequence\" size=\"1\">";
-    foreach(scandir('/home/pi/media/sequences') as $seqFile) 
+    foreach(scandir($sequenceDirectory) as $seqFile) 
     {
       if($seqFile != '.' && $seqFile != '..')
       {

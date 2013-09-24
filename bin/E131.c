@@ -1,7 +1,9 @@
 #include "log.h"
 #include "E131.h"
 #include "playList.h"
-#include "ogg123.h"
+#include "mpg123.h"
+#include "settings.h"
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/time.h>
@@ -13,13 +15,12 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
-#include <math.h> 
+#include <math.h>
 
 // external variables
 extern struct mpg123_type mpg123;
 extern PlaylistEntry playList[32];
 extern int MusicPlayerStatus;
-extern MusicStatus musicStatus;
 extern currentPlaylistEntry;
 
 int helpme;
@@ -29,16 +30,13 @@ extern char pixelnetDMXhasBeenSent;
 extern char sendPixelnetDMXdata;
 
 
-char * universeFile = "/home/pi/media/universes";
-const char *bytesReceivedFile = "/home/pi/media/bytesReceived";
 int E131status = E131_STATUS_IDLE;
 
 struct sockaddr_in    localAddress;
 struct sockaddr_in    E131address[MAX_UNIVERSE_COUNT];
 int                   sendSocket;
 
-char * sequenceFolder = "/home/pi/media/sequences/";
-char currentSequenceFile[128];
+char currentSequenceFile[128];//FIXME
 
 
 const char  E131header[] = {
@@ -83,7 +81,7 @@ int syncedToMusic=0;
 
 void E131_Initialize()
 {
-  usTimerValue = (unsigned int)(((float)1/(float)RefreshRate) * ((float)985000));
+  usTimerValue = (unsigned int)(((float)1/(float)RefreshRate) * ((float)990000));
 //  usTimerValue = (unsigned int)(((float)1/(float)RefreshRate) * ((float)1200000));
 	E131sequenceNumber=1;
   GetLocalWiredIPaddress(LocalAddress);
@@ -95,7 +93,7 @@ void GetLocalWiredIPaddress(char * IPaddress)
 {
 	FILE *fp;
   size_t len;
-	fp = popen("/sbin/ifconfig|grep inet|head -1|sed 's/\:/ /'|awk '{print $3}'", "r");
+	fp = popen("/sbin/ifconfig|grep inet|head -1|sed 's/\\:/ /'|awk '{print $3}'", "r");
  	
 	if (fp == NULL) 
 	{
@@ -104,8 +102,8 @@ void GetLocalWiredIPaddress(char * IPaddress)
  	}
 	len = fread(IPaddress,1,64,fp);
 	// Remove '\n' by replacing with '\0'
-	LogWrite("\nIP=%s\n",IPaddress);
 	IPaddress[len-1] = '\0';
+	LogWrite("IP=%s\n",IPaddress);
  	pclose(fp);
 }
 
@@ -173,19 +171,19 @@ int E131_OpenSequenceFile(const char * file)
   {
     E131_CloseSequenceFile(); // Close if open
   }
-  strcpy(currentSequenceFile,sequenceFolder);
+  strcpy(currentSequenceFile,(const char *)getSequenceDirectory());
+  strcat(currentSequenceFile,"/");
   strcat(currentSequenceFile,file);
-  seqFile = fopen(currentSequenceFile, "r");
+  seqFile = fopen((const char *)currentSequenceFile, "r");
   if (seqFile == NULL) 
   {
-		LogWrite("Error opening sequence file/ fopen returned %d\n",seqFile);
+		LogWrite("Error opening sequence file: %s fopen returned %d\n",currentSequenceFile,seqFile);
     return 0;
   }
 	// Get Step Size
   fseek(seqFile,STEP_SIZE_OFFSET,SEEK_SET);
   bytesRead=fread(fileData,1,4,seqFile);
   stepSize = fileData[0] + (fileData[1]<<8) + (fileData[2]<<16) + (fileData[3]<<24);
-	LogWrite("Stepsize %d\n",stepSize);
 
   fseek(seqFile, 0L, SEEK_END);
   seqFileSize = ftell(seqFile);
@@ -222,21 +220,21 @@ void E131_SetTimer(int us)
   tout_val.it_value.tv_sec = 0; 
   tout_val.it_value.tv_usec = us;
   setitimer(ITIMER_REAL, &tout_val,0);
-  signal(SIGALRM,E131_Send);            
+  signal(SIGALRM,(__sighandler_t)E131_Send);
 }
 
 void E131_Send()
 {
   struct itimerval tout_val;
-  ShowDiff();
+ 
   if(E131status == E131_STATUS_IDLE)
   {
     return;
   }
 	
-	if(MusicPlayerStatus==PLAYING_MPLAYER_STATUS && !syncedToMusic && (musicStatus.secondsElasped < 3))
+	if(MusicPlayerStatus==PLAYING_MPLAYER_STATUS && !syncedToMusic && (mpg123.seconds < 2))
 	{
-		//Playlist_SyncToMusic();
+		Playlist_SyncToMusic();
 	}
 	
   if(filePosition < currentSequenceFileSize - stepSize)
@@ -297,29 +295,8 @@ void Playlist_SyncToMusic(void)
 {
   unsigned int diff=0;
 	unsigned int absDifference=0;
-	float MusicSeconds = (float)((float)musicStatus.secondsElasped + ((float)musicStatus.subSecondsElasped/(float)100));
+  float MusicSeconds = customRounding(mpg123.seconds, .05);
 	syncedToMusic = 1;
-  CalculatedMusicFilePosition = ((long)(MusicSeconds * RefreshRate) * stepSize) + CHANNEL_DATA_OFFSET  ;
-  LogWrite("Syncing to Music\n");
-  filePosition = CalculatedMusicFilePosition;
-  fseek(seqFile, CalculatedMusicFilePosition, SEEK_SET);
-}
-
-void ShowDiff(void)
-{
-  unsigned int diff=0;
-	unsigned int absDifference=0;
-  int secs;
-	float MusicSeconds = (float)((float)musicStatus.secondsElasped + ((float)musicStatus.subSecondsElasped/(float)100));
-	
-	MusicSeconds = customRounding(MusicSeconds, .05);
-	
-	secs = (int)MusicSeconds;
-	if (MusicLastSecond == secs)
-	{return;}
-	MusicLastSecond = secs;
-	
-
   CalculatedMusicFilePosition = ((long)(MusicSeconds * RefreshRate) * stepSize) + CHANNEL_DATA_OFFSET  ;
 	if(CalculatedMusicFilePosition > filePosition)
 	{
@@ -331,10 +308,12 @@ void ShowDiff(void)
 	}
 		
   absDifference = abs(diff);
-//  LogWrite("RefreshRate= %f MusicSeconds = %f secs=%d diff = %d , abs = %d  CFP= %d FP= %d       
-//\n",RefreshRate,MusicSeconds,MusicLastSecond,diff,absDifference,CalculatedMusicFilePosition,filePosition);
-}
+  LogWrite("diff = %d , abs = %d     \n",diff,absDifference);
 
+  LogWrite("Syncing to Music\n");
+  filePosition = CalculatedMusicFilePosition;
+  fseek(seqFile, CalculatedMusicFilePosition, SEEK_SET);
+}
 
 float customRounding(float value, float roundingValue) 
 {
@@ -350,11 +329,11 @@ void LoadUniversesFromFile()
   UniverseCount=0;
 	char active =0;
 
-  LogWrite("Opening File Now %s\n",universeFile);
-  fp = fopen(universeFile, "r");
+  LogWrite("Opening File Now %s\n",getUniverseFile());
+  fp = fopen((const char *)getUniverseFile(), "r");
   if (fp == NULL) 
   {
-    LogWrite("Could not open universe file %s\n",universeFile);
+    LogWrite("Could not open universe file %s\n",getUniverseFile());
   	return;
   }
   while(fgets(buf, 512, fp) != NULL)
@@ -409,7 +388,7 @@ void ResetBytesReceived()
 	{
 		int i;
 		FILE *file;
-		file = fopen(bytesReceivedFile, "w");
+		file = fopen((const char *)getBytesFile(), "w");
 		for(i=0;i<UniverseCount;i++)
 		{
 			if(i==UniverseCount-1)
