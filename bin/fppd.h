@@ -5,7 +5,10 @@ void CreateDaemon(void);
 void PlayerProcess(void);
 void CheckExistanceOfDirectoriesAndFiles();
 
-#define PLAYER_MODE											0
-#define E131_PIXELNET_DMX_BRIDGE_MODE		1
+enum fppModes {
+	PLAYER_MODE = 0,
+	BRIDGE_MODE,
+	DEFAULT_MODE
+};
 
 #endif

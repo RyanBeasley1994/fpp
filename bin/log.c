@@ -1,25 +1,26 @@
 #include "log.h"
+#include "settings.h"
 
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdarg.h>
 #include <time.h>
 
-FILE *logFile;
-const char *filename = "/home/pi/media/fppLog.txt";
 
-static bool verbose = false;
-static bool foreground = false;
 void _LogWrite(char *file, int line, const char *format, ...)
 {
-	return;
 	va_list arg;
 	time_t t = time(NULL);
 	struct tm tm = *localtime(&t);
 	char timeStr[32];
-	sprintf(timeStr,"%.2d-%.2d-%d %.2d:%.2d:%.2d",
-	                tm.tm_mon+1,tm.tm_mday,tm.tm_year,tm.tm_hour,tm.tm_min,tm.tm_sec);
-	if ( verbose )
+	sprintf(timeStr,"%4d-%.2d-%.2d %.2d:%.2d:%.2d",
+					1900+tm.tm_year,
+					tm.tm_mon+1,
+					tm.tm_mday,
+					tm.tm_hour,
+					tm.tm_min,
+					tm.tm_sec);
+	if ( getVerbose() == FPP_TRUE )
 	{
 		fprintf(stdout, "%s  %s:%d:", timeStr, file, line);
 		va_start(arg, format);
@@ -27,9 +28,16 @@ void _LogWrite(char *file, int line, const char *format, ...)
 		va_end(arg);
 	}
 
-	if ( ! foreground )	
+	if ( getDaemonize() == FPP_TRUE )	
 	{
-		logFile = fopen(filename, "a");
+		FILE *logFile;
+
+		logFile = fopen((const char *)getLogFile(), "a");
+		if ( ! logFile )
+		{
+			fprintf(stderr, "Error: Unable to open log file for writing!\n");
+			return;
+		}
 		fprintf(logFile, "%s  %s:%d:",timeStr, file, line);
 		va_start(arg, format);
 		vfprintf(logFile, format, arg);
