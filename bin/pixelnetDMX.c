@@ -21,26 +21,22 @@ char PixelnetDMXdataHeader[] = {0xCC,0xCC,0xCC,0xCC,0xCC,0x55};
 char pixelnetDMXhasBeenSent = 0;
 char sendPixelnetDMXdata = 0;
 
+char * pixelnetDMXFile = "/home/pi/media/pixelnetDMX";
 PixelnetDMXentry pixelnetDMX[MAX_PIXELNET_DMX_PORTS];
 int pixelnetDMXcount =0;
 
 char bufferPixelnetDMX[PIXELNET_DMX_BUF_SIZE]; 
 
-void CreatePixelnetDMXfile(const char * file)
+void CreatePixelnetDMXfile(char * file)
 {
-	FILE *fp;
+  FILE *fp;
 	char settings[16];
 	char command[16];
 	int i;
 	int startChannel=1;
-	fp = fopen(file, "w");
-	if ( ! fp )
-	{
-		LogWrite("Error: Unable to create pixelnet file.\n");
-		exit(EXIT_FAILURE);
-	}
+  fp = fopen(file, "w");
 	LogWrite("Creating file: %s\n",file);
-
+		
 	for(i=0;i<MAX_PIXELNET_DMX_PORTS;i++,startChannel+=4096)
 	{
 		if(i==MAX_PIXELNET_DMX_PORTS-1)
@@ -117,7 +113,7 @@ void LoadPixelnetDMXsettingsFromFile()
   FILE *fp;
   char buf[512];
   char *s;
-  fp = fopen((const char *)getPixelnetFile(), "r");
+  fp = fopen(pixelnetDMXFile, "r");
   LogWrite("Opening PixelnetDMX File\n");
   if (fp == NULL) 
   {

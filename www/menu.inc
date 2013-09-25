@@ -2,22 +2,21 @@
 $rfs_version = exec("cat /etc/fpp/rfs_version", $output, $return_val);
 //TODO: Make this fancier
 if ( $return_val != 0 )
-	$rfs_version = "Unknown";
+$rfs_version = "Unknown";
 unset($output);
 
 $git_version = exec("git --git-dir=".dirname(dirname(__FILE__))."/.git/ rev-parse --short HEAD", $output, $return_val);
 //TODO: Make this awesomer
 if ( $return_val != 0 )
-	$git_version = "Unknown";
+$git_version = "Unknown";
 unset($output);
 
 $git_remote_version = exec("git ls-remote --heads https://github.com/FalconChristmas/fpp | grep master | awk '$1 > 0 { print substr($1,1,7)}'", $output, $return_val);
 if ( $return_val != 0 )
-	$git_remote_version = "Unknown";
+$git_remote_version = "Unknown";
 unset($output);
 ?>
 
-<?php require_once(dirname(__FILE__)."/config.php"); ?>
 	 <div class="header">
 	 		<div class="headerLeft"><a href="http://www.falconchristmas.com"><img src="images/falconlogo.png"  height="60" /></a></div>
 	 		<div class="headerCenter"><div class="siteName">Falcon Pi Player (FPP)</div>
@@ -30,17 +29,14 @@ unset($output);
 
     <div id="fppMenu" class="ddsmoothmenu">
     <ul>
-      <li><a href="index.php">Status/Control</a>
+      <li><a href="index.php">Status/Control</a></li>
+      <!-- <li><a href="#">Basic Setup</a>
         <ul>
-          <li><a href="/">Status Page</a></li>
           <li><a href="uipassword.php">Set UI Password</a></li>
           <li><a href="timeconfig.php">Config/Set Time</a></li>
           <li><a href="networkconfig.php">Network</a></li>
-<?php if ( $rds_enabled == true ) { ?>
-          <li><a href="rds.php">RDS</a></li>
-<?php } ?>
-          <li><a href="settings.php">FPP Settings</a></li>
-        </ul>
+          <li><a href="playerkconfig.php">Player Mode</a></li>
+        </ul> -->
       </li>
       <li><a href="#">Content Setup</a>
         <ul>

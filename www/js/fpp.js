@@ -913,8 +913,8 @@ function PopulatePlayListEntries(playList,reloadFile,selectedRow)
 			var playListArr = new Array();
 			xmlhttp.open("GET",url,false);
 			xmlhttp.setRequestHeader('Content-Type', 'text/xml');
+			xmlhttp.send();
 
-			xmlhttp.onreadystatechange = function() {
 			var xmlDoc=xmlhttp.responseXML; 
 			var playlist = xmlDoc.getElementsByTagName('Playlists')[0];
 			PlaylistCount =playlist.childNodes.length;
@@ -926,9 +926,6 @@ function PopulatePlayListEntries(playList,reloadFile,selectedRow)
 				}
 			}
 			playListArray = playListArr;
-			};
-
-			xmlhttp.send();
 		}
 
 	function AddScheduleEntry()
@@ -1436,6 +1433,40 @@ function PopulatePlayListEntries(playList,reloadFile,selectedRow)
 		} 
 	}
 		
+function verifynotify(field1, field2, result_id, match_html, nomatch_html, button_disable) {
+ this.field1 = field1;
+ this.field2 = field2;
+ this.result_id = result_id;
+ this.match_html = match_html;
+ this.nomatch_html = nomatch_html;
+ this.button_disable = button_disable;
+
+ this.check = function() {
+
+   // Make sure we don't cause an error
+   // for browsers that do not support getElementById
+   if (!this.result_id) { return false; }
+   if (!document.getElementById){ return false; }
+   r = document.getElementById(this.result_id);
+   if (!r){ return false; }
+
+   if (this.field1.value != "" && this.field1.value == this.field2.value) {
+     r.innerHTML = this.match_html;
+	 var j = document.getElementById("submit_button");
+     j.disabled = false; 
+	$('#submit_button').removeClass('disableButtons');
+	$('#submit_button').addClass('buttons');
+   } else {
+     r.innerHTML = this.nomatch_html;
+	 //$("#submit_button").attr("disabled", "disabled");
+	 var j = document.getElementById("submit_button");
+     j.disabled = true; 
+	$('#submit_button').removeClass('buttons');
+	$('#submit_button').addClass('disableButtons');
+   }
+ }
+}
+
 function PopulateStatusPlaylistEntries(playselected,playList,reloadFile)
 {
 			var type;
@@ -1589,6 +1620,7 @@ function GetFPPDmode()
 			}
 		};
 		xmlhttp.send();
+
 }
 
 

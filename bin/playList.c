@@ -4,8 +4,6 @@
 #include "command.h"
 #include "E131.h"
 #include "schedule.h"
-#include "settings.h"
-
 #include "ogg123.h"
 #include <unistd.h>
 #include <stdio.h>
@@ -18,9 +16,12 @@
 #include <sys/stat.h>
 #include <errno.h>
 
+char * playlistFolder = "/home/pi/media/playlists/";
+char * musicFolder2 = "/home/pi/media/music/";
+
 PlaylistDetails playlistDetails;
 extern unsigned long currentSequenceFileSize;
-char currentSequenceFile[128];//FIXME
+char currentSequenceFile[128];
 char * pl = "playlist1.lst";
 
 
@@ -29,8 +30,8 @@ extern int E131status;
 extern int MusicCommand;
 extern int MusicResponse;
 extern int MusicPlayerStatus;
-extern char currentSong[128];//FIXME
-extern char nextSong[128];//FIXME
+extern char currentSong[128];
+extern char nextSong[128];
 extern int lastSecond;
 extern int FPPstatus;
 
@@ -86,12 +87,11 @@ int ReadPlaylist(char const * file)
   char buf[512];
   char *s;
   // Put together playlist file with default folder
-  strcpy((char*)playlistDetails.currentPlaylist,(const char *)getPlaylistDirectory());
-  strcat((char*)playlistDetails.currentPlaylist,"/");
+  strcpy((char*)playlistDetails.currentPlaylist,playlistFolder);
   strcat((char*)playlistDetails.currentPlaylist,file);
 
   LogWrite("Opening File Now %s\n",playlistDetails.currentPlaylist);
-  fp = fopen((const char*)playlistDetails.currentPlaylist, "r");
+  fp = fopen((char*)playlistDetails.currentPlaylist, "r");
   if (fp == NULL) 
   {
     LogWrite("Could not open playlist file %s\n",file);
@@ -261,7 +261,7 @@ void Play_PlaylistEntry(void)
 		//}
 	}
 
-	LogWrite("playListCount=%d  CurrentPlaylistEntry = %d\n", playlistDetails.playListCount,playlistDetails.currentPlaylistEntry);
+	LogWrite("\nplayListCount=%d  CurrentPlaylistEntry = %d\n", playlistDetails.playListCount,playlistDetails.currentPlaylistEntry); 
   switch(playlistDetails.playList[playlistDetails.currentPlaylistEntry].type)
   {
     case PL_TYPE_BOTH:
@@ -292,8 +292,7 @@ void Play_PlaylistEntry(void)
 void PlaylistPlaySong(void)
 {
   LogWrite("Starting to Play\n");
-  strcpy(playlistDetails.playList[playlistDetails.currentPlaylistEntry].songFullPath,getMusicDirectory());
-  strcat(playlistDetails.playList[playlistDetails.currentPlaylistEntry].songFullPath,"/");
+  strcpy(playlistDetails.playList[playlistDetails.currentPlaylistEntry].songFullPath,musicFolder2);
   strcat(playlistDetails.playList[playlistDetails.currentPlaylistEntry].songFullPath,
          playlistDetails.playList[playlistDetails.currentPlaylistEntry].songName);
   oggPlaySong(playlistDetails.playList[playlistDetails.currentPlaylistEntry].songFullPath);

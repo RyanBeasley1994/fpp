@@ -5,7 +5,6 @@
 #include <sys/socket.h>
 #include <sys/wait.h>
 #include <stdbool.h>
-#include <string.h>
 #include "log.h"
 #include "ogg123.h"
 
