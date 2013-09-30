@@ -16,9 +16,9 @@ void InitializePixelnetDMX()
 	LogWrite("Init stub\n");
 }
 
-void SendPixelnetDMX(void)
+void SendPixelnetDMX(char sendBlankingData)
 {
-//	LogWrite("Send DMX data stub\n");
+	LogWrite("Send DMX data stub\n");
 }
 
 void SendPixelnetDMXConfig()
