@@ -9,6 +9,7 @@
 #include "pixelnetDMX.h"
 #include "e131bridge.h"
 #include "settings.h"
+#include "effects.h"
 
 #include <unistd.h>
 #include <stdio.h>
@@ -24,10 +25,15 @@ int FPPstatus=FPP_STATUS_IDLE;
 
 int main(int argc, char *argv[])
 {
-	loadSettings("/home/pi/media/settings");
-
 	// Parse our arguments first, override any defaults
 	parseArguments(argc, argv);
+
+	printSettings();
+
+	// Now load things from our settings file, only load
+	// things that haven't already been set by the command
+	// line which should take presidence
+	loadSettings(getSettingsFile());
 
 	printSettings();
 
@@ -43,6 +49,8 @@ int main(int argc, char *argv[])
 
 	Command_Initialize();
 
+	InitEffects();
+
 	if (getFPPmode() == PLAYER_MODE)
 	{
 		LogWrite("Starting Player Process\n");
@@ -57,6 +65,8 @@ int main(int argc, char *argv[])
 	{
 		LogWrite("Invalid mode, quitting\n");
 	}
+
+	CloseEffects();
 
 	return 0;
 }

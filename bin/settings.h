@@ -13,9 +13,11 @@ struct config
 	int		fppMode;
 	int		volume;
 
+	char	*settingsFile;
 	char	*mediaDirectory;
 	char	*musicDirectory;
 	char	*sequenceDirectory;
+	char	*eventDirectory;
 	char	*playlistDirectory;
 	char	*universeFile;
 	char	*pixelnetFile;
@@ -33,6 +35,8 @@ char *trimwhitespace(const char *str);
 void printSettings(void);
 void usage(char *appname);
 
+enum FPP_MODE { FPP_FALSE = 0, FPP_TRUE, FPP_DEFAULT };
+
 
 // Action functions
 int parseArguments(int argc, char **argv);
@@ -47,9 +51,11 @@ int getVerbose(void);
 int getDaemonize(void);
 int  getFPPmode(void);
 int  getVolume(void);
+char *getSettingsFile(void);
 char *getMediaDirectory(void);
 char *getMusicDirectory(void);
 char *getSequenceDirectory(void);
+char *getEventDirectory(void);
 char *getPlaylistDirectory(void);
 char *getUniverseFile(void);
 char *getPixelnetFile(void);
