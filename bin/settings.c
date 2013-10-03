@@ -81,6 +81,10 @@ void printSettings(void)
 		fprintf(fd, "sequenceDirectory(%u): %s\n",
 				strlen(settings.sequenceDirectory),
 				settings.sequenceDirectory);
+	if ( settings.eventDirectory )
+		fprintf(fd, "eventDirectory(%u): %s\n",
+				strlen(settings.eventDirectory),
+				settings.eventDirectory);
 	if ( settings.playlistDirectory )
 		fprintf(fd, "playlistDirectory(%u): %s\n",
 				strlen(settings.playlistDirectory),
@@ -168,6 +172,7 @@ int parseArguments(int argc, char **argv)
 			{"music-directory",		required_argument,	0, 'M'},
 			{"sequence-directory",	required_argument,	0, 'S'},
 			{"playlist-directory",	required_argument,	0, 'P'},
+			{"event-directory",		required_argument,	0, 'E'},
 			{"universe-file",		required_argument,	0, 'u'},
 			{"pixelnet-file",		required_argument,	0, 'p'},
 			{"schedule-file",		required_argument,	0, 's'},
@@ -228,6 +233,9 @@ int parseArguments(int argc, char **argv)
 			case 'S': //sequence-directory
 				settings.sequenceDirectory = strdup(optarg);
 				break;
+			case 'E': //event-directory
+				settings.eventDirectory = strdup(optarg);
+				break;
 			case 'P': //playlist-directory
 				settings.playlistDirectory = strdup(optarg);
 				break;
@@ -274,9 +282,9 @@ int loadSettings(const char *filename)
 			if (( ! line ) || ( ! read ) || ( read == 1 ))
 				continue;
 
-			char *key = NULL, *value = NULL;	// These are values we're looking for and will
-												// run through trimwhitespace which means they
-												// must be freed before we are done.
+			char *key, *value;	// These are values we're looking for and will
+								// run through trimwhitespace which means they
+								// must be freed before we are done.
 
 			char *token = strtok(line, "=");
 			if ( ! token )
@@ -403,6 +411,23 @@ int loadSettings(const char *filename)
 					settings.sequenceDirectory = strdup(value);
 				else
 					fprintf(stderr, "Failed to load sequenceDirectory from config file\n");
+			}
+			else if ( strcmp(key, "eventDirectory") == 0 )
+			{
+				if ( ! settings.eventDirectory )
+				{
+					token = strtok(NULL, "=");
+					if ( ! token )
+					{
+						fprintf(stderr, "Error tokenizing value for eventDirectory setting\n");
+						continue;
+					}
+					value = trimwhitespace(token);
+					if ( strlen(value) )
+						settings.eventDirectory = strdup(token);
+					else
+						fprintf(stderr, "Failed to load eventDirectory from config file\n");
+				}
 			}
 			else if ( strcmp(key, "playlistDirectory") == 0 )
 			{
@@ -593,6 +618,13 @@ char *getSequenceDirectory(void)
 
 	return settings.sequenceDirectory;
 }
+char *getEventDirectory(void)
+{
+	if ( !settings.eventDirectory )
+		return "/home/pi/media/events";
+
+	return settings.eventDirectory;
+}
 char *getPlaylistDirectory(void)
 {
 	if ( !settings.playlistDirectory )
@@ -692,6 +724,8 @@ int saveSettingsFile(void)
 	bytes += fwrite(buffer, 1, strlen(buffer), fd);
 	snprintf(buffer, 1024, "%s = %s\n", "sequenceDirectory", getSequenceDirectory());
 	bytes += fwrite(buffer, 1, strlen(buffer), fd);
+	snprintf(buffer, 1024, "%s = %s\n", "eventDirectory", getEventDirectory());
+	bytes += fwrite(buffer, 1, strlen(buffer), fd);
 	snprintf(buffer, 1024, "%s = %s\n", "playlistDirectory", getPlaylistDirectory());
 	bytes += fwrite(buffer, 1, strlen(buffer), fd);
 	snprintf(buffer, 1024, "%s = %s\n", "universeFile", getUniverseFile());
@@ -746,6 +780,16 @@ void CheckExistanceOfDirectoriesAndFiles(void)
 		if ( mkdir(getSequenceDirectory(), 0777) != 0 )
 		{
 			LogWrite("Error: Unable to create sequence directory.\n");
+			exit(EXIT_FAILURE);
+		}
+	}
+	if(!DirectoryExists(getEventDirectory()))
+	{
+		LogWrite("Event directory does not exist, creating it.\n");
+
+		if ( mkdir(getEventDirectory(), 0777) != 0 )
+		{
+			LogWrite("Error: Unable to create event directory.\n");
 			exit(EXIT_FAILURE);
 		}
 	}
