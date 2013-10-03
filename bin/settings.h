@@ -16,6 +16,7 @@ struct config
 	char	*mediaDirectory;
 	char	*musicDirectory;
 	char	*sequenceDirectory;
+	char	*eventDirectory;
 	char	*playlistDirectory;
 	char	*universeFile;
 	char	*pixelnetFile;
@@ -23,12 +24,12 @@ struct config
 	char	*logFile;
 	char	*silenceMusic;
 
+	char	*MPG123Path;
 	char	*bytesFile;
 };
 
 
 // Helpers
-void initSettings(void);
 char *trimwhitespace(const char *str);
 void printSettings(void);
 void usage(char *appname);
@@ -50,12 +51,14 @@ int  getVolume(void);
 char *getMediaDirectory(void);
 char *getMusicDirectory(void);
 char *getSequenceDirectory(void);
+char *getEventDirectory(void);
 char *getPlaylistDirectory(void);
 char *getUniverseFile(void);
 char *getPixelnetFile(void);
 char *getScheduleFile(void);
 char *getLogFile(void);
 char *getSilenceMusic(void);
+char *getMPG123Path(void);
 char *getBytesFile(void);
 
 

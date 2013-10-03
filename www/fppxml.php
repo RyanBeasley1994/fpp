@@ -56,7 +56,11 @@ $command_array = Array(
 	"setVolume" => 'SetVolume',
 	"setFPPDmode" => 'SetFPPDmode',
 	"getVolume" => 'GetVolume',
-	"getFPPDmode" => 'GetFPPDmode'
+	"getFPPDmode" => 'GetFPPDmode',
+	"playEffect" => 'PlayEffect',
+	"triggerEvent" => 'TriggerEvent',
+	"saveEvent" => 'SaveEvent',
+	"deleteEvent" => 'DeleteEvent'
 );
 
 
@@ -182,7 +186,7 @@ function EchoStatusXML($status)
 
 function RebootPi()
 {
-	$status=exec(SUDO . " shutdown -r now");
+	$status=exec("sudo shutdown -r now");
 	EchoStatusXML($status);
 }
 
@@ -212,7 +216,7 @@ function SetFPPDmode()
 	check($mode);
 
 	WriteFPPDmodeToFile($mode);
-	EchoStatusXML("true");
+	EchoStatusXML($status);
 }
 
 function GetVolume()
@@ -246,27 +250,14 @@ function GetFPPDmode()
 
 function WriteFPPDmodeToFile($mode)
 {
-	$mode_string[0] = "player";
-	$mode_string[1] = "bridge";
-
 	global $settingsFile;
 
-	$settings = file_get_contents($settingsFile);
-	if ( !empty($settings) )
+	$settings = file($settingsFile);
+	if($settings != FALSE)
 	{
-		if ( strpos($settings, "fppMode") )
-		{
-			$settings = preg_replace('/fppMode\s*=\s*\w*/', "fppMode = ".$mode_string[$mode], $settings);
-		}
-		else
-		{
-			$settings .= "\nfppMode = " . $mode_string[$mode] . "\n";
-		}
-		file_put_contents($settingsFile, $settings);
-	}
-	else
-	{
-		file_put_contents($settingsFile, "fppMode = " . $mode_string[$mode] . "\n");
+		$temp = explode(",",$settings[0]);
+		$settings[0] = sprintf("%d,%d,\n",$mode,$temp[1]);
+		file_put_contents($settingsFile, implode('', $settings));
 	}
 }
 
@@ -274,28 +265,18 @@ function WriteVolumeToFile($volume)
 {
 	global $settingsFile;
 
-	$settings = file_get_contents($settingsFile);
-	if ( !empty($settings) )
+	$settings = file($settingsFile);
+	if($settings != FALSE)
 	{
-		if ( strpos($settings, "volume") )
-		{
-			$settings = preg_replace('/volume\s*=\s*\w*/', "volume = ".$volume, $settings);
-		}
-		else
-		{
-			$settings .= "\nvolume = " . $volume . "\n";
-		}
-		file_put_contents($settingsFile, $settings);
-	}
-	else
-	{
-		file_put_contents($settingsFile, "volume = " . $volume . "\n");
+		$temp = explode(",",$settings[0]);
+		$settings[0] = sprintf("%d,%d,\n",$temp[0],$volume);
+		file_put_contents($settingsFile, implode('', $settings));
 	}
 }
 
 function ShutdownPi()
 {
-	$status=exec(SUDO . " shutdown -h now");
+	$status=exec("sudo shutdown -h now");
 	EchoStatusXML($status);
 }
 
@@ -359,6 +340,57 @@ function StartPlaylist()
 	EchoStatusXML('true');
 }
 
+function PlayEffect()
+{
+	$effect = $_GET['effect'];
+	$startChannel = $_GET['startChannel'];
+	$status = SendCommand("e," . $effect . "," . $startChannel . ",");
+	EchoStatusXML($status);
+}
+
+function TriggerEvent()
+{
+	$event = $_GET['event'];
+	$status = SendCommand("t," . $event . ",");
+	EchoStatusXML($status);
+}
+
+function SaveEvent()
+{
+	global $eventDirectory;
+
+	$event = $_GET['event'];
+	check($event);
+
+	$event = $event . ".fevt";
+
+	if (isset($_GET['effect']) && $_GET['effect'] != "")
+		$eseq = $_GET['effect'] . ".eseq";
+	else
+		$eseq = "";
+
+	$f=fopen($eventDirectory . $event,"w") or exit("Unable to open file! : " . $event);
+	$eventDefinition = sprintf("id=%d\neffect=%s\nstartChannel=%s\nscript=%s\n",
+		$_GET['id'], $eseq, $_GET['startChannel'], $_GET['script']);
+	fwrite($f, $eventDefinition);
+	fclose($f);
+
+	EchoStatusXML('Success');
+}
+
+function DeleteEvent()
+{
+	global $eventDirectory;
+
+	$event = $_GET['event'];
+	check($event);
+
+	$event = $event . ".fevt";
+	unlink($eventDirectory . $event);
+
+	EchoStatusXML('Success');
+}
+
 function GetUniverseReceivedBytes()
 {
 	global $bytesFile;
@@ -417,7 +449,7 @@ function StopNow()
 
 function StopFPPD()
 {
-	$status=exec(SUDO . " killall fppd");
+	$status=exec("killall fppd");
 	EchoStatusXML('true');
 }
 
@@ -429,7 +461,7 @@ function StartFPPD()
 	$status=exec("if ps cax | grep -q fppd; then echo \"true\"; else echo \"false\"; fi");
 	if($status == 'false')
 	{
-		$status=exec(SUDO . " nice -n -20 ".dirname(dirname(__FILE__))."/bin/fppd --config-file $settingsFile --daemonize >/dev/null");
+		$status=exec("nice -n -20 ".dirname(dirname(__FILE__))."/bin/fppd --config-file $settingsFile --daemonize >/dev/null");
 	}
 	EchoStatusXML($status);
 }
