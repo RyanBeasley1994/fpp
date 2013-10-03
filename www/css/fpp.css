@@ -159,7 +159,7 @@
 	border: solid 2px rgb(0,0,0);
 }
 
-#playerControls, #eventControls {
+#playerControls {
 	text-align:center;
 }
 
@@ -312,14 +312,7 @@ fieldset
 	overflow:auto
 }
 
-#eventListContents, #effectListContents{
-	height:120px;
-	min-height:120px;
-	max-height:120px;
-	overflow:auto
-}
-
-#statusPlaylist, #eventList, #effectList{
+#statusPlaylist{
 	border:thin solid;	
 	font-size:12px;
 	margin-top: 5px;
@@ -341,7 +334,7 @@ fieldset
 }
 
 
-.playlistHeader, .eventListHeader, .effectListHeader{
+.playlistHeader{
 	background:#DDD;
 	text-align:center;
 }
@@ -360,7 +353,7 @@ fieldset
 	text-align:center;
 	}	
 
-.playlistSelectedEntry, .eventSelectedEntry, .effectSelectedEntry{
+.playlistSelectedEntry{
 	background:#CCC;
 }
 
@@ -478,8 +471,4 @@ fieldset
 	width:75%;
 	text-align:left;
 	
-}
-
-#credits{
-	text-align: center;
 }

@@ -16,7 +16,6 @@ struct config
 	char	*mediaDirectory;
 	char	*musicDirectory;
 	char	*sequenceDirectory;
-	char	*eventDirectory;
 	char	*playlistDirectory;
 	char	*universeFile;
 	char	*pixelnetFile;
@@ -51,7 +50,6 @@ int  getVolume(void);
 char *getMediaDirectory(void);
 char *getMusicDirectory(void);
 char *getSequenceDirectory(void);
-char *getEventDirectory(void);
 char *getPlaylistDirectory(void);
 char *getUniverseFile(void);
 char *getPixelnetFile(void);

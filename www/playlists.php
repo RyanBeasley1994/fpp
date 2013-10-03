@@ -152,7 +152,7 @@ $(document).ready(function () {
 		echo "<select id=\"selSequence\" size=\"1\">";
     foreach(scandir($sequenceDirectory) as $seqFile) 
     {
-      if($seqFile != '.' && $seqFile != '..' && !preg_match('/.eseq$/', $seqFile))
+      if($seqFile != '.' && $seqFile != '..')
       {
         echo "<option value=\"" . $seqFile . "\">" . $seqFile . "</option>";
       }
