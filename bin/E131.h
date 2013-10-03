@@ -33,9 +33,6 @@ typedef struct{
 		unsigned long bytesReceived;
 }UniverseEntry;
 
-extern int E131status;
-
-int IsSequenceRunning(void);
 void GetLocalWiredIPaddress(char * IPaddress);
 void E131_Initialize();
 int E131_InitializeNetwork();
