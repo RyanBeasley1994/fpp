@@ -1083,7 +1083,7 @@ function PopulatePlayListEntries(playList,reloadFile,selectedRow)
 		
 	function updateFPPStatus()
 	{
-		var status = GetFPPstatus();
+		var status = IsFPPDrunning();
 	}
 	
 	function IsFPPDrunning()
@@ -1106,6 +1106,7 @@ function PopulatePlayListEntries(playList,reloadFile,selectedRow)
 						{
 							$("#btnDaemonControl").attr('value', 'Stop FPPD');
 							$('#daemonStatus').html("FPPD is running.");
+							status = GetFPPstatus();
 							//$("#playerStatus").css({ display: "block" });
 						}
 						else
@@ -1134,14 +1135,6 @@ function PopulatePlayListEntries(playList,reloadFile,selectedRow)
 					var status = xmlDoc.getElementsByTagName('Status')[0];
 					if(status.childNodes.length> 1)
 					{
-						var fppStatus = status.childNodes[1].textContent;
-
-						if (fppStatus == 0)
-						{
-							$("#btnDaemonControl").attr('value', 'Stop FPPD');
-							$('#daemonStatus').html("FPPD is running.");
-						}
-
 						var fppMode = status.childNodes[0].textContent;
 						if(fppMode == 0 )
 						{
@@ -1149,6 +1142,8 @@ function PopulatePlayListEntries(playList,reloadFile,selectedRow)
 							$("#nextPlaylist").css("display","block");
 							$("#bytesTransferred").css("display","none");
 							
+							
+							var fppStatus = status.childNodes[1].textContent;
 							if(fppStatus == STATUS_IDLE)
 							{
 								gblCurrentPlaylistIndex =0;
@@ -1241,11 +1236,6 @@ function PopulatePlayListEntries(playList,reloadFile,selectedRow)
 							
 							GetUniverseBytesReceived();
 						}
-					}
-					else
-					{
-						$('#fppTime').html('');
-						IsFPPDrunning();
 					}
 				}
 			};
@@ -1422,148 +1412,6 @@ function PopulatePlayListEntries(playList,reloadFile,selectedRow)
 		xmlhttp.send();
 	}
 
-function PlayEffect(startChannel)
-{
-	if (startChannel == undefined)
-		startChannel = "1";
-
-	var url = "fppxml.php?command=playEffect&effect=" + PlayEffectSelected + "&startChannel=" + startChannel;
-	var xmlhttp=new XMLHttpRequest();
-	xmlhttp.open("GET",url,false);
-	xmlhttp.setRequestHeader('Content-Type', 'text/xml');
-	xmlhttp.send();
-
-	GetRunningEffects();
-}
-
-function StopEffect()
-{
-	var url = "fppxml.php?command=stopEffect&id=" + RunningEffectSelected;
-	var xmlhttp=new XMLHttpRequest();
-	xmlhttp.open("GET",url,false);
-	xmlhttp.setRequestHeader('Content-Type', 'text/xml');
-	xmlhttp.send();
-
-	GetRunningEffects();
-}
-
-function DeleteEffect()
-{
-	var url = "fppxml.php?command=deleteEffect&effect=" + PlayEffectSelected;
-	var xmlhttp=new XMLHttpRequest();
-	xmlhttp.open("GET",url,true);
-	xmlhttp.setRequestHeader('Content-Type', 'text/xml');
-	xmlhttp.send();
-	location.reload(true);
-}
-
-var gblLastRunningEffectsXML = "";
-
-function GetRunningEffects()
-{
-	var url = "fppxml.php?command=getRunningEffects";
-	var xmlhttp=new XMLHttpRequest();
-	xmlhttp.open("GET",url,true);
-	xmlhttp.setRequestHeader('Content-Type', 'text/xml');
-
-	xmlhttp.onreadystatechange = function () {
-		if (xmlhttp.readyState == 4 && xmlhttp.status==200)
-		{
-			var xmlDoc=xmlhttp.responseXML;
-			var xmlText = new XMLSerializer().serializeToString(xmlDoc);
-
-			$('#tblRunningEffects').html('');
-			if (xmlText != gblLastRunningEffectsXML)
-			{
-				xmlText = gblLastRunningEffectsXML;
-
-				var entries = xmlDoc.getElementsByTagName('RunningEffects')[0];
-
-				if(entries.childNodes.length> 0)
-				{
-					for(i=0;i<entries.childNodes.length;i++)
-					{
-						id = entries.childNodes[i].childNodes[0].textContent;
-						name = entries.childNodes[i].childNodes[1].textContent;
-
-						$('#tblRunningEffects').append('<tr><td width="5%">' + id + '</td><td width="95%">' + name + '</td></tr>');
-					}
-
-					setTimeout(GetRunningEffects, 1000);
-				}
-			}
-		}
-	}
-
-	xmlhttp.send();
-}
-
-	function TriggerEvent()
-	{
-		var url = "fppxml.php?command=triggerEvent&id=" + TriggerEventSelected;
-		var xmlhttp=new XMLHttpRequest();
-		xmlhttp.open("GET",url,true);
-		xmlhttp.setRequestHeader('Content-Type', 'text/xml');
-		xmlhttp.send();
-	}
-
-	function AddEvent()
-	{
-		$('#newEventID').val('');
-		$('#newEventName').val('');
-		$('#newEventEffect').val('');
-		$('#newEventStartChannel').val('');
-		$('#newEventScript').val('');
-		$('#newEvent').show();
-	}
-
-	function EditEvent()
-	{
-		var IDt = $('#event_' + TriggerEventSelected).find('td:eq(0)').text();
-		var ID = IDt.replace(' \/ ', '_');
-		$('#newEventID').val(ID);
-		if ($('#newEventID').val() != ID)
-		{
-			$('#newEventID').prepend("<option value='" + ID + "' selected>" + IDt + "</option>");
-		}
-
-		$('#newEventName').val($('#event_' + TriggerEventSelected).find('td:eq(1)').text());
-		$('#newEventEffect').val($('#event_' + TriggerEventSelected).find('td:eq(2)').text());
-		$('#newEventStartChannel').val($('#event_' + TriggerEventSelected).find('td:eq(3)').text());
-		$('#newEventScript').val($('#event_' + TriggerEventSelected).find('td:eq(4)').text());
-		$('#newEvent').show();
-	}
-
-	function SaveEvent()
-	{
-		var url = "fppxml.php?command=saveEvent&event=" + $('#newEventName').val() +
-			"&id=" + $('#newEventID').val() +
-			"&effect=" + $('#newEventEffect').val() +
-			"&startChannel=" + $('#newEventStartChannel').val() +
-			"&script=" + $('#newEventScript').val();
-		var xmlhttp=new XMLHttpRequest();
-		xmlhttp.open("GET",url,true);
-		xmlhttp.setRequestHeader('Content-Type', 'text/xml');
-		xmlhttp.send();
-		$('#newEvent').hide();
-		location.reload(true);
-	}
-
-	function CancelNewEvent()
-	{
-		$('#newEvent').hide();
-	}
-
-	function DeleteEvent()
-	{
-		var url = "fppxml.php?command=deleteEvent&id=" + TriggerEventSelected;
-		var xmlhttp=new XMLHttpRequest();
-		xmlhttp.open("GET",url,true);
-		xmlhttp.setRequestHeader('Content-Type', 'text/xml');
-		xmlhttp.send();
-		location.reload(true);
-	}
-
 	function RebootPi()
 	{
 		if (confirm('REBOOT the Falcon Pi Player?')) 
@@ -1737,7 +1585,6 @@ function GetFPPDmode()
 							$("#playerStatus").css("display","none");
 							$("#nextPlaylist").css("display","none");
 							$("#selFPPDmode").prop("selectedIndex",1);
-							$("#textFPPDmode").text("Bridged Mode");
 					}
 			}
 		};

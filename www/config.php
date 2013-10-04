@@ -2,6 +2,7 @@
 
 //define('debug', true);
 define('CONFIG_FILE', '/home/pi/media/settings');
+define('SUDO', 'sudo');
 
 $fd = @fopen(CONFIG_FILE, "r");
 if ( ! $fd )
@@ -17,7 +18,6 @@ $mediaDirectory = "/home/pi/media/";
 $musicDirectory = "/home/pi/media/music/";
 $sequenceDirectory = "/home/pi/media/sequences/";
 $playlistDirectory = "/home/pi/media/playlists/";
-$eventDirectory = "/home/pi/media/events/";
 $universeFile = "/home/pi/media/universes";
 $pixelnetFile = "/home/pi/media/pixelnetDMX";
 $scheduleFile = "/home/pi/media/schedule";
