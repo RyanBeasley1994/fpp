@@ -2,6 +2,8 @@ CC := gcc
 
 TARGETS = fpp fppd
 
+INSTALL_PROGRAM = install -m 755 -p
+
 OBJECTS_fpp = \
 	fpp.o \
 	$(NULL)
@@ -18,6 +20,9 @@ OBJECTS_fppd = \
 	command.o \
 	e131bridge.o \
 	settings.o \
+	effects.o \
+	events.o \
+	lighttimer.o \
 	$(NULL)
 LIBS_fppd = \
 	-lpthread \
@@ -37,7 +42,7 @@ LIBS_fppd += \
 	-lm \
 	$(NULL)
 else
-ifeq ($(filter-out i686 x86_64, $(ARCH)),)
+ifeq ($(filter-out i686 x86_64 armv5tel, $(ARCH)),)
 # do something Linux-y
 CFLAGS += \
 	-g \
@@ -54,6 +59,10 @@ endif
 
 .PHONY: all
 all: $(TARGETS)
+
+release: $(TARGETS)
+	-$(INSTALL_PROGRAM) fpp ../bin/fpp
+	-$(INSTALL_PROGRAM) fppd ../bin/fppd
 
 fpp: $(OBJECTS_fpp)
 	$(CC) $(CFLAGS_$@) $(OBJECTS_$@) $(LIBS_$@) $(LDFLAGS_$@) -o $@
