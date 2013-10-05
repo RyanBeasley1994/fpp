@@ -22,7 +22,7 @@ void initSettings(void)
 	settings.pixelnetFile = strdup("/home/pi/media/pixelnetDMX");
 	settings.scheduleFile = strdup("/home/pi/media/schedule");
 	settings.logFile = strdup("/home/pi/media/fppdLog.txt");
-	settings.silenceMusic = strdup("/home/pi/media/silence.mp3");
+	settings.silenceMusic = strdup("/home/pi/media/silence.ogg");
 	settings.bytesFile = strdup("/home/pi/media/bytesReceived");
   settings.daemonize = 1;
 }
@@ -96,6 +96,10 @@ void printSettings(void)
 		fprintf(fd, "sequenceDirectory(%u): %s\n",
 				strlen(settings.sequenceDirectory),
 				settings.sequenceDirectory);
+	if ( settings.eventDirectory )
+		fprintf(fd, "eventDirectory(%u): %s\n",
+				strlen(settings.eventDirectory),
+				settings.eventDirectory);
 	if ( settings.playlistDirectory )
 		fprintf(fd, "playlistDirectory(%u): %s\n",
 				strlen(settings.playlistDirectory),
@@ -124,6 +128,10 @@ void printSettings(void)
 		fprintf(fd, "bytesFile(%u): %s\n",
 				strlen(settings.bytesFile),
 				settings.bytesFile);
+	if ( settings.controlMajor != 0 )
+		fprintf(fd, "controlMajor: %u\n", settings.controlMajor);
+	if ( settings.controlMinor != 0 )
+		fprintf(fd, "controlMinor: %u\n", settings.controlMinor);
 }
 
 void usage(char *appname)
@@ -157,7 +165,7 @@ printf("Usage: %s [OPTION...]\n"
 "\t-b, --bytes-file\tSet the bytes received file\n"
 "\t-h, --help\t\tThis menu.\n"
 "\t    --mpg123-path\tSet location of mpg123 executable\n"
-"\t    --silence-music\tSet location of silence.mp3 file\n", appname);
+"\t    --silence-music\tSet location of silence.ogg file\n", appname);
 }
 
 int parseArguments(int argc, char **argv)
@@ -179,6 +187,7 @@ int parseArguments(int argc, char **argv)
 			{"music-directory",		required_argument,	0, 'M'},
 			{"sequence-directory",	required_argument,	0, 'S'},
 			{"playlist-directory",	required_argument,	0, 'P'},
+			{"event-directory",		required_argument,	0, 'E'},
 			{"universe-file",		required_argument,	0, 'u'},
 			{"pixelnet-file",		required_argument,	0, 'p'},
 			{"schedule-file",		required_argument,	0, 's'},
@@ -238,6 +247,9 @@ int parseArguments(int argc, char **argv)
 			case 'S': //sequence-directory
 				free(settings.sequenceDirectory);
 				settings.sequenceDirectory = strdup(optarg);
+				break;
+			case 'E': //event-directory
+				settings.eventDirectory = strdup(optarg);
 				break;
 			case 'P': //playlist-directory
 				free(settings.playlistDirectory);
@@ -430,6 +442,23 @@ int loadSettings(const char *filename)
 				else
 					fprintf(stderr, "Failed to load sequenceDirectory from config file\n");
 			}
+			else if ( strcmp(key, "eventDirectory") == 0 )
+			{
+				if ( ! settings.eventDirectory )
+				{
+					token = strtok(NULL, "=");
+					if ( ! token )
+					{
+						fprintf(stderr, "Error tokenizing value for eventDirectory setting\n");
+						continue;
+					}
+					value = trimwhitespace(token);
+					if ( strlen(value) )
+						settings.eventDirectory = strdup(token);
+					else
+						fprintf(stderr, "Failed to load eventDirectory from config file\n");
+				}
+			}
 			else if ( strcmp(key, "playlistDirectory") == 0 )
 			{
 				token = strtok(NULL, "=");
@@ -549,6 +578,46 @@ int loadSettings(const char *filename)
 				else
 					fprintf(stderr, "Failed to load bytesFile from config file\n");
 			}
+			else if ( strcmp(key, "controlMajor") == 0 )
+			{
+				token = strtok(NULL, "=");
+				if ( ! token )
+				{
+					fprintf(stderr, "Error tokenizing value for controlMajor setting\n");
+					continue;
+				}
+				value = trimwhitespace(token);
+				if ( strlen(value) )
+				{
+					int ivalue = atoi(value);
+					if (ivalue >= 0)
+						settings.controlMajor = (unsigned int)ivalue;
+					else
+						fprintf(stderr, "Error, controlMajor value negative in config file\n");
+				}
+				else
+					fprintf(stderr, "Failed to load controlMajor setting from config file\n");
+			}
+			else if ( strcmp(key, "controlMinor") == 0 )
+			{
+				token = strtok(NULL, "=");
+				if ( ! token )
+				{
+					fprintf(stderr, "Error tokenizing value for controlMinor setting\n");
+					continue;
+				}
+				value = trimwhitespace(token);
+				if ( strlen(value) )
+				{
+					int ivalue = atoi(value);
+					if (ivalue >= 0)
+						settings.controlMinor = (unsigned int)ivalue;
+					else
+						fprintf(stderr, "Error, controlMinor value negative in config file\n");
+				}
+				else
+					fprintf(stderr, "Failed to load controlMinor setting from config file\n");
+			}
 			else
 			{
 				fprintf(stderr, "Warning: unknown key: '%s', skipping\n", key);
@@ -617,6 +686,13 @@ char *getSequenceDirectory(void)
 {
 	return settings.sequenceDirectory;
 }
+char *getEventDirectory(void)
+{
+	if ( !settings.eventDirectory )
+		return "/home/pi/media/events";
+
+	return settings.eventDirectory;
+}
 char *getPlaylistDirectory(void)
 {
 	return settings.playlistDirectory;
@@ -644,6 +720,16 @@ char *getSilenceMusic(void)
 char *getBytesFile(void)
 {
 	return settings.bytesFile;
+}
+
+unsigned int getControlMajor(void)
+{
+	return settings.controlMajor;
+}
+
+unsigned int getControlMinor(void)
+{
+	return settings.controlMinor;
 }
 
 void setVolume(int volume)
@@ -688,6 +774,8 @@ int saveSettingsFile(void)
 	bytes += fwrite(buffer, 1, strlen(buffer), fd);
 	snprintf(buffer, 1024, "%s = %s\n", "sequenceDirectory", getSequenceDirectory());
 	bytes += fwrite(buffer, 1, strlen(buffer), fd);
+	snprintf(buffer, 1024, "%s = %s\n", "eventDirectory", getEventDirectory());
+	bytes += fwrite(buffer, 1, strlen(buffer), fd);
 	snprintf(buffer, 1024, "%s = %s\n", "playlistDirectory", getPlaylistDirectory());
 	bytes += fwrite(buffer, 1, strlen(buffer), fd);
 	snprintf(buffer, 1024, "%s = %s\n", "universeFile", getUniverseFile());
@@ -703,6 +791,10 @@ int saveSettingsFile(void)
 	snprintf(buffer, 1024, "%s = %s\n", "mpg123Path", getMPG123Path());
 	bytes += fwrite(buffer, 1, strlen(buffer), fd);
 	snprintf(buffer, 1024, "%s = %s\n", "bytesFile", getBytesFile());
+	bytes += fwrite(buffer, 1, strlen(buffer), fd);
+	snprintf(buffer, 1024, "%s = %d\n", "controlMajor", getControlMajor());
+	bytes += fwrite(buffer, 1, strlen(buffer), fd);
+	snprintf(buffer, 1024, "%s = %d\n", "controlMinor", getControlMinor());
 	bytes += fwrite(buffer, 1, strlen(buffer), fd);
 
 	fclose(fd);
@@ -742,6 +834,16 @@ void CheckExistanceOfDirectoriesAndFiles(void)
 		if ( mkdir(getSequenceDirectory(), 0777) != 0 )
 		{
 			LogWrite("Error: Unable to create sequence directory.\n");
+			exit(EXIT_FAILURE);
+		}
+	}
+	if(!DirectoryExists(getEventDirectory()))
+	{
+		LogWrite("Event directory does not exist, creating it.\n");
+
+		if ( mkdir(getEventDirectory(), 0777) != 0 )
+		{
+			LogWrite("Error: Unable to create event directory.\n");
 			exit(EXIT_FAILURE);
 		}
 	}
