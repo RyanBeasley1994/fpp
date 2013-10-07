@@ -1,7 +1,4 @@
 *.o
-.*.swp
-src/fpp
-src/fppd
 cscope.out
 tags
 pixelnetDMX
