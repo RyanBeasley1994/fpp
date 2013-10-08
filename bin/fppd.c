@@ -9,7 +9,6 @@
 #include "pixelnetDMX.h"
 #include "e131bridge.h"
 #include "settings.h"
-#include "effects.h"
 
 #include <unistd.h>
 #include <stdio.h>
@@ -46,10 +45,6 @@ int main(int argc, char *argv[])
 
 	Command_Initialize();
 
-	InitEffects();
-
-	SendBlankingData();
-
 	if (getFPPmode() == PLAYER_MODE)
 	{
 		LogWrite("Starting Player Process\n");
@@ -64,8 +59,6 @@ int main(int argc, char *argv[])
 	{
 		LogWrite("Invalid mode, quitting\n");
 	}
-
-	CloseEffects();
 
 	return 0;
 }
