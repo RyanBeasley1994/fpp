@@ -22,7 +22,6 @@ struct config
 	char	*scheduleFile;
 	char	*logFile;
 	char	*silenceMusic;
-	char	*settingsFile;
 
 	char	*bytesFile;
 };
@@ -58,7 +57,6 @@ char *getScheduleFile(void);
 char *getLogFile(void);
 char *getSilenceMusic(void);
 char *getBytesFile(void);
-char *getSettingsFile(void);
 
 
 // Setters
