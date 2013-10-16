@@ -99,7 +99,7 @@ h2 {
   <br />
   <div id= "divSeq">
     <fieldset class="fs">
-      <legend> Sequence &amp; Effects Files (.fseq, .eseq) </legend>
+      <legend> Sequence Files (.fseq) </legend>
       <div id="divSeqData">
         <table id="tblSequences">
         </table>
@@ -139,7 +139,7 @@ $('#uploader_div').ajaxupload({
 		GetSequenceFiles();
 		GetMusicFiles();
 	},
-	allowExt:['ogg','fseq','eseq']
+	allowExt:['ogg','fseq']
 });
 </script> 
 </div>
