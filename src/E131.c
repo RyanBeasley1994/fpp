@@ -2,6 +2,7 @@
 #include "E131.h"
 #include "playList.h"
 #include "settings.h"
+#include "effects.h"
 #include "lightthread.h"
 
 #include "ogg123.h"
@@ -76,6 +77,9 @@ int E131sequenceFramesSent = 0;
 char E131sequenceNumber=1;
 
 int syncedToMusic=0;
+
+char lastControlMajor = 0;
+char lastControlMinor = 0;
 
 void ShowDiff(void);
 
@@ -211,7 +215,8 @@ void E131_CloseSequenceFile()
   }
   E131status = E131_STATUS_IDLE;
 
-  SendBlankingData();
+  if (!IsEffectRunning())
+    SendBlankingData();
 }
 
 int IsSequenceRunning(void)
@@ -220,6 +225,16 @@ int IsSequenceRunning(void)
     return 1;
 
   return 0;
+}
+
+int NormalizeControlValue(char in)
+{
+	char result = (char)(((unsigned char)in + 5) / 10);
+
+	if (result == 26)
+		return 25;
+
+	return result;
 }
 
 void E131_ReadData(void)
@@ -232,6 +247,22 @@ void E131_ReadData(void)
 		{
 			bytesRead=fread(fileData,1,stepSize,seqFile);
 			filePosition+=bytesRead;
+
+			if (getControlMajor() && getControlMinor())
+			{
+				char thisMajor = NormalizeControlValue(fileData[getControlMajor()-1]);
+				char thisMinor = NormalizeControlValue(fileData[getControlMinor()-1]);
+
+				if ((lastControlMajor != thisMajor) ||
+						(lastControlMinor != thisMinor))
+				{
+					lastControlMajor = thisMajor;
+					lastControlMinor = thisMinor;
+
+					if (lastControlMajor && lastControlMinor)
+						TriggerEvent(lastControlMajor, lastControlMinor);
+				}
+			}
 		}
 
 		if (bytesRead != stepSize)
@@ -243,23 +274,20 @@ void E131_ReadData(void)
 	{
 		bzero(fileData, sizeof(fileData));
 	}
+
+	if (IsEffectRunning())
+		OverlayEffects(fileData);
 }
 
 void E131_Send()
 {
   struct itimerval tout_val;
-  ShowDiff();
-
-	if(MusicPlayerStatus==PLAYING_MPLAYER_STATUS && !syncedToMusic && (musicStatus.secondsElasped < 3))
-	{
-		//Playlist_SyncToMusic();
-	}
 
 	for(i=0;i<UniverseCount;i++)
 	{
 		memcpy((void*)(E131packet+E131_HEADER_LENGTH),(void*)(fileData+universes[i].startAddress-1),universes[i].size);
 
-		E131packet[E131_SEQUENCE_INDEX] = E131sequenceNumber;;
+		E131packet[E131_SEQUENCE_INDEX] = E131sequenceNumber;
 		E131packet[E131_UNIVERSE_INDEX] = (char)(universes[i].universe/256);
 		E131packet[E131_UNIVERSE_INDEX+1]	= (char)(universes[i].universe%256);
 		E131packet[E131_COUNT_INDEX] = (char)((universes[i].size+1)/256);
@@ -278,7 +306,6 @@ void E131_Send()
 		E131secondsElasped = (int)((float)(filePosition-CHANNEL_DATA_OFFSET)/((float)stepSize*(float)20.0));
 		E131secondsRemaining = E131totalSeconds-E131secondsElasped;
 	}
-
 	// Send data to pixelnet board
 	E131_SendPixelnetDMXdata();
 }
@@ -286,57 +313,6 @@ void E131_Send()
 void E131_SendPixelnetDMXdata()
 {
 	SendPixelnetDMX();
-}
-
-
-	
-void Playlist_SyncToMusic(void)
-{
-  unsigned int diff=0;
-	unsigned int absDifference=0;
-	float MusicSeconds = (float)((float)musicStatus.secondsElasped + ((float)musicStatus.subSecondsElasped/(float)100));
-	syncedToMusic = 1;
-  CalculatedMusicFilePosition = ((long)(MusicSeconds * RefreshRate) * stepSize) + CHANNEL_DATA_OFFSET  ;
-  LogWrite("Syncing to Music\n");
-  filePosition = CalculatedMusicFilePosition;
-  fseek(seqFile, CalculatedMusicFilePosition, SEEK_SET);
-}
-
-void ShowDiff(void)
-{
-  unsigned int diff=0;
-	unsigned int absDifference=0;
-  int secs;
-	float MusicSeconds = (float)((float)musicStatus.secondsElasped + ((float)musicStatus.subSecondsElasped/(float)100));
-	
-	MusicSeconds = customRounding(MusicSeconds, .05);
-	
-	secs = (int)MusicSeconds;
-	if (MusicLastSecond == secs)
-	{return;}
-	MusicLastSecond = secs;
-	
-
-  CalculatedMusicFilePosition = ((long)(MusicSeconds * RefreshRate) * stepSize) + CHANNEL_DATA_OFFSET  ;
-	if(CalculatedMusicFilePosition > filePosition)
-	{
-		diff = -(CalculatedMusicFilePosition - filePosition);
-	}
-	else
-	{
-		diff = filePosition-CalculatedMusicFilePosition;
-	}
-		
-  absDifference = abs(diff);
-//  LogWrite("RefreshRate= %f MusicSeconds = %f secs=%d diff = %d , abs = %d  CFP= %d FP= %d       
-//\n",RefreshRate,MusicSeconds,MusicLastSecond,diff,absDifference,CalculatedMusicFilePosition,filePosition);
-}
-
-
-float customRounding(float value, float roundingValue) 
-{
-    int mulitpler = floor(value / roundingValue);
-    return mulitpler * roundingValue;
 }
 
 void LoadUniversesFromFile()
