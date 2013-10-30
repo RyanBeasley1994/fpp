@@ -58,14 +58,7 @@ $command_array = Array(
 	"setFPPDmode" => 'SetFPPDmode',
 	"getVolume" => 'GetVolume',
 	"getFPPDmode" => 'GetFPPDmode',
-	"setE131interface" => 'SetE131interface',
-	"playEffect" => 'PlayEffect',
-	"stopEffect" => 'StopEffect',
-	"deleteEffect" => 'DeleteEffect',
-	"getRunningEffects" => 'GetRunningEffects',
-	"triggerEvent" => 'TriggerEvent',
-	"saveEvent" => 'SaveEvent',
-	"deleteEvent" => 'DeleteEvent'
+	"setE131interface" => 'SetE131interface'
 );
 
 
@@ -112,11 +105,8 @@ function CleanupSocket($path, $socket = '')
 		@socket_close($socket);
 }
 
-$socketError = "";
-
 function SendCommand($command)
 {
-	$socketError = "";
 	$cpath = "/tmp/FPP." . getmypid();
 	$spath = "/tmp/FPPD";
 
@@ -124,27 +114,27 @@ function SendCommand($command)
 
 	$socket = socket_create(AF_UNIX, SOCK_DGRAM, 0);
 	if ( !@socket_set_nonblock($socket) ) {
-		$socketError = 'Unable to set nonblocking mode for ' . $spath . ' socket';
+		echo( 'Unable to set nonblocking mode for ' . $spath . ' socket' );
 		CleanupSocket($cpath, $socket);
 		return false;
 	}
 
 	if ( !@socket_bind($socket, $cpath) ) {
-		$socketError = 'socket_bind() failed for ' . $cpath . ' socket';
+		echo( 'socket_bind() failed for ' . $cpath . ' socket' );
 		CleanupSocket($cpath, $socket);
 		return false;
 	}
 
 	if ( @socket_connect($socket, $spath) === false)
 	{
-		$socketError = 'socket_connect() failed for ' . $spath . ' socket';
+		echo( 'socket_connect() failed for ' . $spath . ' socket' );
 		CleanupSocket($cpath, $socket);
 		return false;
 	}
 
 	if ( @socket_send($socket, $command, strLen($command), 0) == FALSE )
 	{
-		$socketError = 'socket_send() failed for ' . $spath . ' socket';
+		echo( 'socket_send() failed for ' . $spath . ' socket' );
 		CleanupSocket($cpath, $socket);
 		return false;
 	}
@@ -158,7 +148,7 @@ function SendCommand($command)
 		$bytes_received = @socket_recv($socket, $buf, 1024, MSG_DONTWAIT);
 		if ($bytes_received == -1)
 		{
-			$socketError = 'An error occured while receiving from the socket';
+			echo('An error occured while receiving from the socket');
 			CleanupSocket($cpath, $socket);
 			return false;
 		}
@@ -330,146 +320,6 @@ function StartPlaylist()
 	EchoStatusXML('true');
 }
 
-function PlayEffect()
-{
-	$effect = $_GET['effect'];
-	check($effect);
-	$startChannel = $_GET['startChannel'];
-	check($startChannel);
-	$status = SendCommand("e," . $effect . "," . $startChannel . ",");
-	EchoStatusXML('Success');
-}
-
-function StopEffect()
-{
-	$id = $_GET['id'];
-	check($id);
-	$status = SendCommand("StopEffect," . $id . ",");
-	EchoStatusXML('Success');
-}
-
-function DeleteEffect()
-{
-	global $sequenceDirectory;
-
-	$effect = $_GET['effect'];
-	check($effect);
-
-	unlink($sequenceDirectory . $effect . ".eseq");
-
-	EchoStatusXML('Success');
-}
-
-function GetRunningEffects()
-{
-	$status = SendCommand("GetRunningEffects");
-
-	$result = "";
-	$first = 1;
-	$status = preg_replace('/\n/', '', $status);
-
-	$doc = new DomDocument('1.0');
-	// Running Effects
-	$root = $doc->createElement('RunningEffects');
-	$root = $doc->appendChild($root);
-	foreach(preg_split('/;/', $status) as $line)
-	{
-		if ($first)
-		{
-			$first = 0;
-			continue;
-		}
-
-		$info = preg_split('/,/', $line);
-
-		$runningEffect = $doc->createElement('RunningEffect');
-		$runningEffect = $root->appendChild($runningEffect);
-
-		// Running Effect ID
-		$id = $doc->createElement('ID');
-		$id = $runningEffect->appendChild($id);
-		$value = $doc->createTextNode($info[0]);
-		$value = $id->appendChild($value);
-
-		// Effect Name
-		$name = $doc->createElement('Name');
-		$name = $runningEffect->appendChild($name);
-		$value = $doc->createTextNode($info[1]);
-		$value = $name->appendChild($value);
-	}
-
-	echo $doc->saveHTML();
-}
-
-function GetExpandedEventID()
-{
-	$id = $_GET['id'];
-	check($id);
-
-	$majorID = preg_replace('/_.*/', '', $id);
-	$minorID = preg_replace('/.*_/', '', $id);
-
-	$filename = sprintf("%02d_%02d", $majorID, $minorID);
-
-	return $filename;
-}
-
-function TriggerEvent()
-{
-	$id = GetExpandedEventID();
-
-	$status = SendCommand("t," . $id . ",");
-
-	EchoStatusXML($status);
-}
-
-function SaveEvent()
-{
-	global $eventDirectory;
-
-	$ids = preg_split('/_/', $_GET['id']);
-
-	if (count($ids) < 2)
-		return;
-
-	$id = GetExpandedEventID();
-	$filename = $id . ".fevt";
-
-	$name = $_GET['event'];
-	check($name);
-
-	if (isset($_GET['effect']) && $_GET['effect'] != "")
-		$eseq = $_GET['effect'] . ".eseq";
-	else
-		$eseq = "";
-
-	$f=fopen($eventDirectory . $filename,"w") or exit("Unable to open file! : " . $event);
-	$eventDefinition = sprintf(
-		"majorID=%d\n" .
-		"minorID=%d\n" .
-		"name=%s\n" .
-		"effect=%s\n" .
-		"startChannel=%s\n" .
-		"script=%s\n",
-		$ids[0], $ids[1], $name,
-		$eseq, $_GET['startChannel'], $_GET['script']);
-	fwrite($f, $eventDefinition);
-	fclose($f);
-
-	EchoStatusXML('Success');
-}
-
-function DeleteEvent()
-{
-	global $eventDirectory;
-
-	$filename = GetExpandedEventID() . ".fevt";
-
-	unlink($eventDirectory . $filename);
-
-	EchoStatusXML('Success');
-}
-
 function GetUniverseReceivedBytes()
 {
 	global $bytesFile;
@@ -548,7 +398,7 @@ function StartFPPD()
 function GetFPPstatus()
 {
 	$status = SendCommand('s');
-	if($status == false || $status == 'false')
+	if($status == 'false')
 	{
 		$doc = new DomDocument('1.0');
 		$root = $doc->createElement('Status');

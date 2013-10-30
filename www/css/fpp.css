@@ -108,17 +108,6 @@
 	padding:10px;
 }
 
-.controlHeader{
-	width: 15%;
-}
-.controlValue{
-	width: 40%;
-}
-.controlButton{
-	text-align: right;
-	width: 45%;
-}
-
 #nextPlaylist
 {
 	margin-top:10px;
@@ -170,37 +159,8 @@
 	border: solid 2px rgb(0,0,0);
 }
 
-#playerControls, #eventControls {
+#playerControls {
 	text-align:center;
-}
-
-.eventTblID{
-	width: 5%;
-}
-.eventTblName{
-	width: 20%;
-}
-.eventTblEffect{
-	width: 31%;
-}
-.eventTblStartCh{
-	width: 7%;
-}
-.eventTblScript{
-	width: 31%;
-}
-
-.aboutLeft{
-	float: left;
-	width: 47%;
-}
-.aboutCenter{
-	float: left;
-	width: 6%;
-}
-.aboutRight{
-	float: left;
-	width: 47%;
 }
 
 #startPlaylistControls select {
@@ -216,7 +176,7 @@ html
 	background-size: cover;
 }
 
-#divSeq, #divEthernet, #divEffectLibrary{
+#divSeq, #divEthernet{
 	min-height: 300px;
 	width: 383px;
 	float: left;
@@ -229,7 +189,7 @@ html
 	width: 100%;
 }
 
-#divMusic, #divWireless, #divRunningEffects{
+#divMusic, #divWireless{
 	overflow: auto;
 	display: table;
 	min-height: 300px;
@@ -352,39 +312,19 @@ fieldset
 	overflow:auto
 }
 
-#eventListContents, #effectListContents{
-	height:120px;
-	min-height:120px;
-	max-height:120px;
-	overflow:auto
-}
-
-#statusPlaylist, #eventList, #effectList, #effectLibrary, #runningEffects{
+#statusPlaylist{
 	border:thin solid;	
 	font-size:12px;
 	margin-top: 5px;
 	-moz-border-radius: 5px;
 	border-radius: 5px;
 	-webkit-border-radius: 5px;
-	min-height: 65px;
 }
 
 #playerStatus{
 }
 
-.playerStatusHeader{
-	width: 40%;
-}
-.playerStatusLeft{
-	width: 50%;
-	float: left;
-}
-.playerStatusRight{
-	width: 50%;
-	float: left;
-}
-
-#tblStatusPlaylist{
+#tblStatusPlaylist
 	 width:100%;
 }
 
@@ -394,7 +334,7 @@ fieldset
 }
 
 
-.playlistHeader, .eventListHeader, .effectListHeader{
+.playlistHeader{
 	background:#DDD;
 	text-align:center;
 }
@@ -413,7 +353,7 @@ fieldset
 	text-align:center;
 	}	
 
-.playlistSelectedEntry, .eventSelectedEntry, .effectSelectedEntry{
+.playlistSelectedEntry{
 	background:#CCC;
 }
 
@@ -531,24 +471,4 @@ fieldset
 	width:75%;
 	text-align:left;
 	
-}
-
-#credits{
-	text-align: center;
-}
-
-.desktopItem{
-	display: inline;
-}
-
-.mobileItem{
-	display: none;
-}
-
-#outputMenu{
-}
-
-
-.logo{
-	height: 60px;
 }
