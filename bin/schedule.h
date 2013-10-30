@@ -47,7 +47,6 @@ typedef struct{
 	int endWeeklySeconds;
 }SchedulePlaylistDetails;
 
-void ReLoadCurrentScheduleInfo();
 void LoadCurrentScheduleInfo();
 void LoadNextScheduleInfo();
 void PlayListLoadCheck();
