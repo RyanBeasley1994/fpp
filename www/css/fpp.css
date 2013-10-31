@@ -108,17 +108,6 @@
 	padding:10px;
 }
 
-.controlHeader{
-	width: 15%;
-}
-.controlValue{
-	width: 40%;
-}
-.controlButton{
-	text-align: right;
-	width: 45%;
-}
-
 #nextPlaylist
 {
 	margin-top:10px;
@@ -170,37 +159,8 @@
 	border: solid 2px rgb(0,0,0);
 }
 
-#playerControls, #eventControls {
+#playerControls {
 	text-align:center;
-}
-
-.eventTblID{
-	width: 5%;
-}
-.eventTblName{
-	width: 20%;
-}
-.eventTblEffect{
-	width: 31%;
-}
-.eventTblStartCh{
-	width: 7%;
-}
-.eventTblScript{
-	width: 31%;
-}
-
-.aboutLeft{
-	float: left;
-	width: 47%;
-}
-.aboutCenter{
-	float: left;
-	width: 6%;
-}
-.aboutRight{
-	float: left;
-	width: 47%;
 }
 
 #startPlaylistControls select {
@@ -216,26 +176,32 @@ html
 	background-size: cover;
 }
 
-#divEthernet, #divEffectLibrary{
+#divSeq, #divEthernet{
 	min-height: 300px;
 	width: 383px;
 	float: left;
 }
 
-#divSeqData, #divMusicData, #divVideoData, #divEffectsData, #divScriptsData, #divLogsData {
+#divSeqData {
 	overflow: auto;
-	min-height: 120px;
-	max-height: 120px;
+	min-height: 220px;
+	max-height: 220px;
 	width: 100%;
 }
 
-#divWireless, #divRunningEffects{
+#divMusic, #divWireless{
 	overflow: auto;
 	display: table;
 	min-height: 300px;
 	max-height: 300px;
 	width: 383px;
 	float: right;
+}
+#divMusicData {
+	overflow: auto;
+	min-height: 220px;
+	max-height: 220px;
+	width: 100%;
 }
 
 legend
@@ -275,37 +241,12 @@ fieldset
 .siteName{font-size: 200%; padding-top: 13px;}
 
 
-.colPlaylistNumberDrag{
+.colPlaylistNumber{
 	background-image: url(../images/vertdrag.png);
 	background-repeat:no-repeat;
 	background-size:7px 14px;
 	background-position:0 2px;
 	padding-left:20px;
-}
-.colPlaylistNumber{
-	text-align:right;
-	padding-right:0px;
-	width: 5%;
-}
-.colPlaylistType{
-	text-align:left;
-	padding-left:5px;
-	width: 6%;
-}
-.colPlaylistData1{
-	text-align:left;
-	padding-left:5px;
-	width: 42%;
-}
-.colPlaylistData2{
-	text-align:left;
-	padding-left:5px;
-	width: 41%;
-}
-.colPlaylistFlags{
-	text-align:left;
-	padding-left:5px;
-	width: 6%;
 }
 
 #slider{
@@ -371,39 +312,19 @@ fieldset
 	overflow:auto
 }
 
-#eventListContents, #effectListContents{
-	height:120px;
-	min-height:120px;
-	max-height:120px;
-	overflow:auto
-}
-
-#statusPlaylist, #eventList, #effectList, #effectLibrary, #runningEffects{
+#statusPlaylist{
 	border:thin solid;	
 	font-size:12px;
 	margin-top: 5px;
 	-moz-border-radius: 5px;
 	border-radius: 5px;
 	-webkit-border-radius: 5px;
-	min-height: 65px;
 }
 
 #playerStatus{
 }
 
-.playerStatusHeader{
-	width: 40%;
-}
-.playerStatusLeft{
-	width: 50%;
-	float: left;
-}
-.playerStatusRight{
-	width: 50%;
-	float: left;
-}
-
-#tblStatusPlaylist{
+#tblStatusPlaylist
 	 width:100%;
 }
 
@@ -413,7 +334,7 @@ fieldset
 }
 
 
-.playlistHeader, .eventListHeader, .effectListHeader{
+.playlistHeader{
 	background:#DDD;
 	text-align:center;
 }
@@ -432,7 +353,7 @@ fieldset
 	text-align:center;
 	}	
 
-.playlistSelectedEntry, .eventSelectedEntry, .effectSelectedEntry{
+.playlistSelectedEntry{
 	background:#CCC;
 }
 
@@ -541,12 +462,6 @@ fieldset
 .pl_title {
 	font-size: larger;
 }
-
-.title {
-	font-size: larger;
-	text-align: center;
-	font-weight: bold;
-}
 #playlistEntryProperties ul{
 	padding: 0;
 	margin: 10px;
@@ -556,47 +471,4 @@ fieldset
 	width:75%;
 	text-align:left;
 	
-}
-
-#credits{
-	text-align: center;
-}
-
-.desktopItem{
-	display: inline;
-}
-
-.mobileItem{
-	display: none;
-}
-
-#outputMenu{
-}
-
-
-.logo{
-	height: 60px;
-}
-
-#fileManager {
-	min-width: 768px;
-	width: 768px;
-	margin-left: auto;
-	margin-right: auto;
-}
-.fileDetails {
-	font-size: 13px;
-}
-.fileName {
-	width: 80%;
-}
-.fileTime {
-	width: 20%;
-}
-
-#logText {
-	overflow: auto;
-}
-#logViewer {
-	border: 2px solid #000000;
 }
