@@ -5,7 +5,6 @@
 #include "E131.h"
 #include "schedule.h"
 #include "settings.h"
-#include "events.h"
 
 #include "ogg123.h"
 #include <unistd.h>
@@ -134,20 +133,6 @@ int ReadPlaylist(char const * file)
         playlistDetails.playList[listIndex].pauselength = atoi(s);
         playlistDetails.playList[listIndex].type = PL_TYPE_PAUSE;
         break;
-      case 'v':
-        s = strtok(NULL,",");
-        strcpy(playlistDetails.playList[listIndex].videoName,s);
-        s = strtok(NULL,",");
-        playlistDetails.playList[listIndex].pauselength = atoi(s);
-        playlistDetails.playList[listIndex].type = PL_TYPE_VIDEO;
-        break;
-      case 'e':
-        s = strtok(NULL,",");
-        strcpy(playlistDetails.playList[listIndex].eventID,s);
-        s = strtok(NULL,",");
-        playlistDetails.playList[listIndex].pauselength = atoi(s);
-        playlistDetails.playList[listIndex].type = PL_TYPE_EVENT;
-        break;
       default:
         LogWrite("Invalid entry in sequence file %s\n",file);
         return 0;
@@ -227,12 +212,6 @@ void PlayListPlayingLoop(void)
           pauseStatus = PAUSE_STATUS_IDLE;
         }
         break;
-      case PL_TYPE_VIDEO:
-        Play_PlaylistEntry();
-        break;
-      case PL_TYPE_EVENT:
-        Play_PlaylistEntry();
-        break;
       default:
         break;
     }
@@ -271,8 +250,6 @@ void PauseProcess(void)
 
 void Play_PlaylistEntry(void)
 {
-  PlaylistEntry *plEntry = NULL;
-
   CalculateNextPlayListEntry();
 	if( playlistDetails.currentPlaylistEntry==PLAYLIST_STOP_INDEX)
 	{
@@ -282,12 +259,10 @@ void Play_PlaylistEntry(void)
 	}
 
 	LogWrite("playListCount=%d  CurrentPlaylistEntry = %d\n", playlistDetails.playListCount,playlistDetails.currentPlaylistEntry);
-
-  plEntry = &playlistDetails.playList[playlistDetails.currentPlaylistEntry];
-  switch(plEntry->type)
+  switch(playlistDetails.playList[playlistDetails.currentPlaylistEntry].type)
   {
     case PL_TYPE_BOTH:
-      currentSequenceFileSize=E131_OpenSequenceFile(plEntry->seqName);
+      currentSequenceFileSize=E131_OpenSequenceFile(playlistDetails.playList[playlistDetails.currentPlaylistEntry].seqName);
 			if(currentSequenceFileSize > 0)
 			{
       	PlaylistPlaySong();
@@ -301,18 +276,13 @@ void Play_PlaylistEntry(void)
       PlaylistPlaySong();
       break;
     case PL_TYPE_SEQUENCE:
-      currentSequenceFileSize=E131_OpenSequenceFile(plEntry->seqName);
+      currentSequenceFileSize=E131_OpenSequenceFile(playlistDetails.playList[playlistDetails.currentPlaylistEntry].seqName);
       LogWrite("seqFileSize=%lu\n",currentSequenceFileSize);
       break;
     case PL_TYPE_PAUSE:
       break;
-    case PL_TYPE_VIDEO:
-      PlayVideo(plEntry->videoName, plEntry->pauselength);
-      break;
-    case PL_TYPE_EVENT:
-      TriggerEventByID(plEntry->eventID);
-      break;
   }
+
 }
 
 
@@ -357,7 +327,6 @@ void StopPlaylistNow(void)
   E131_CloseSequenceFile();
   PlaylistStopSong();
   playlistDetails.StopPlaylist = 1;
-  StopVideo();
 }
 
 void JumpToPlaylistEntry(int entryIndex)

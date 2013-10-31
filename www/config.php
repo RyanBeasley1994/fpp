@@ -18,11 +18,6 @@ $mediaDirectory = "/home/pi/media/";
 $musicDirectory = "/home/pi/media/music/";
 $sequenceDirectory = "/home/pi/media/sequences/";
 $playlistDirectory = "/home/pi/media/playlists/";
-$eventDirectory = "/home/pi/media/events/";
-$videoDirectory = "/home/pi/media/videos/";
-$effectDirectory = "/home/pi/media/effects/";
-$scriptDirectory = "/home/pi/media/scripts/";
-$logDirectory = "/home/pi/media/logs/";
 $universeFile = "/home/pi/media/universes";
 $pixelnetFile = "/home/pi/media/pixelnetDMX";
 $scheduleFile = "/home/pi/media/schedule";
@@ -36,13 +31,8 @@ if (defined('debug'))
 	error_log("settings: $settingsFile");
 	error_log("media: $mediaDirectory");
 	error_log("music: $musicDirectory");
-	error_log("event: $eventDirectory");
-	error_log("video: $videoDirectory");
 	error_log("sequence: $sequenceDirectory");
 	error_log("playlist: $playlistDirectory");
-	error_log("effects: $effectDirectory");
-	error_log("scripts: $scriptDirectory");
-	error_log("logs: $logDirectory");
 	error_log("universe: $universeFile");
 	error_log("pixelnet: $pixelnetFile");
 	error_log("schedule: $scheduleFile");
@@ -54,7 +44,6 @@ do
 {
 	global $fppMode, $volume, $settingsFile;
 	global $mediaDirectory, $musicDirectory, $sequenceDirectory, $playlistDirectory;
-	global $eventDirectroy, $videoDirectory;
 	global $universeFile, $pixelnetFile, $scheduleFile, $bytesFile;
 
 	// Parse the file, assuming it exists
@@ -83,23 +72,11 @@ do
 		case "musicDirectory":
 			$musicDirectory = trim($split[1]) . "/";
 			break;
-		case "eventDirectory":
-			$eventDirectory = trim($split[1]) . "/";
-			break;
-		case "videoDirectory":
-			$videoDirectory = trim($split[1]) . "/";
-			break;
 		case "sequenceDirectory":
 			$sequenceDirectory = trim($split[1]) . "/";
 			break;
 		case "playlistDirectory":
 			$playlistDirectory = trim($split[1]) . "/";
-			break;
-		case "effectDirectory":
-			$effectDirectory = trim($split[1]) . "/";
-			break;
-		case "scriptDirectory":
-			$scriptDirectory = trim($split[1]) . "/";
 			break;
 		case "universeFile":
 			$universeFile = trim($split[1]);
@@ -129,13 +106,8 @@ if (defined('debug'))
 	error_log("settings: $settingsFile");
 	error_log("media: $mediaDirectory");
 	error_log("music: $musicDirectory");
-	error_log("event: $eventDirectory");
-	error_log("video: $videoDirectory");
 	error_log("sequence: $sequenceDirectory");
 	error_log("playlist: $playlistDirectory");
-	error_log("effects: $effectDirectory");
-	error_log("scripts: $scriptDirectory");
-	error_log("logs: $logDirectory");
 	error_log("universe: $universeFile");
 	error_log("pixelnet: $pixelnetFile");
 	error_log("schedule: $scheduleFile");
