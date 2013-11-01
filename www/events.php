@@ -94,14 +94,28 @@
 
 	function PrintEffectOptions()
 	{
-		global $sequenceDirectory;
-		foreach(scandir($sequenceDirectory) as $seqFile)
+		global $effectDirectory;
+
+		foreach(scandir($effectDirectory) as $seqFile)
 		{
 			if($seqFile != '.' && $seqFile != '..' && preg_match('/.eseq$/', $seqFile))
 			{
 				$seqFile = preg_replace('/.eseq$/', '', $seqFile);
 				
 				echo "<option value='" . $seqFile . "'>" . $seqFile . "</option>\n";
+			}
+		}
+	}
+
+	function PrintScriptOptions()
+	{
+		global $scriptDirectory;
+
+		foreach(scandir($scriptDirectory) as $scriptFile)
+		{
+			if($scriptFile != '.' && $scriptFile != '..' && preg_match('/.sh$/', $scriptFile))
+			{
+				echo "<option value='" . $scriptFile . "'>" . $scriptFile . "</option>\n";
 			}
 		}
 	}
@@ -190,14 +204,16 @@
 					</tr>
 				</table>
 				<table width="100%">
-					<tr><td width="20%">Event ID:</td><td width="80%"><select id='newEventID'><? PrintEventIDoptions(); ?></select></td></tr>
+					<tr><td width="20%">Event ID (Major/Minor):</td><td width="80%"><select id='newEventID'><? PrintEventIDoptions(); ?></select></td></tr>
 					<tr><td width="20%">Event Name:</td><td width="80%"><input id="newEventName" class="default-value" type="text" value="" size="30" maxlength="60" /></td></tr>
 					<tr><td width="20%">Effect Sequence:</td><td width="80%"><select id="newEventEffect">
-							<option value=''>NONE</option>
+							<option value=''>--- NONE ---</option>
 <? PrintEffectOptions(); ?>
+</select>  Start Channel: <input id="newEventStartChannel" class="default-value" type="text" value="" size="5" maxlength="5" /></td></tr>
+					<tr><td width="20%">Event Script:</td><td width="80%"><select id="newEventScript">
+							<option value=''>--- NONE ---</option>
+<? PrintScriptOptions(); ?>
 </select></td></tr>
-					<tr><td width="20%">Effect Start Channel:</td><td width="80%"><input id="newEventStartChannel" class="default-value" type="text" value="" size="5" maxlength="5" /></td></tr>
-					<tr><td width="20%">Event Script:</td><td width="80%"><input id="newEventScript" class="default-value" type="text" value="" size="60" maxlength="1024" /></td></tr>
 				</table>
 				<input id= "btnSaveNewEvent" type="button" class ="buttons" value="Save Event" onClick="SaveEvent();">
 				<input id= "btnCancelNewEvent" type="button" class ="buttons" value="Cancel Edit" onClick="CancelNewEvent();">
