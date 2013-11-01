@@ -304,10 +304,6 @@ void ParseTimes()
 					newLightDelay += timerOffset;
 			}
 
-			// This is bad if we hit this, but still don't let us go negative
-			if (newLightDelay < 0)
-				newLightDelay = 0;
-
 			LogWrite("LD: %d, NLD: %d\n", LightDelay, newLightDelay);
 			LightDelay = newLightDelay;
 		}

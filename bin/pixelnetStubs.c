@@ -26,11 +26,6 @@ void SendPixelnetDMXConfig()
 	LogWrite("Send DMX config stub\n");
 }
 
-int IsPixelnetDMXActive(void)
-{
-	return 0;
-}
-
 void LoadPixelnetDMXsettingsFromFile()
 {
 	LogWrite("Load PixelnetDMX file stub\n");

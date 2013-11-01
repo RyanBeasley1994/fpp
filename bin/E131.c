@@ -2,7 +2,6 @@
 #include "E131.h"
 #include "playList.h"
 #include "settings.h"
-#include "effects.h"
 #include "lightthread.h"
 
 #include "ogg123.h"
@@ -28,6 +27,11 @@ extern PlaylistEntry playList[32];
 extern int MusicPlayerStatus;
 extern MusicStatus musicStatus;
 extern currentPlaylistEntry;
+
+// From pixelnetDMX.c
+extern char pixelnetDMXhasBeenSent;
+extern char sendPixelnetDMXdata;
+
 
 int E131status = E131_STATUS_IDLE;
 
@@ -75,23 +79,17 @@ char E131sequenceNumber=1;
 
 int syncedToMusic=0;
 
-char lastControlMajor = 0;
-char lastControlMinor = 0;
-
 void ShowDiff(void);
 
 void E131_Initialize()
 {
 	E131sequenceNumber=1;
+	E131LocalAddress = GetE131LocalAddressFromInterface();
+  LogWrite("E131LocalAddress = %s\n",E131LocalAddress);
 	LoadUniversesFromFile();
-	if (UniverseCount)
-	{
-		E131LocalAddress = GetE131LocalAddressFromInterface();
-		LogWrite("E131LocalAddress = %s\n",E131LocalAddress);
-		E131_InitializeNetwork();
-		free(E131LocalAddress);
-	}
+	E131_InitializeNetwork();
 	SendBlankingData();
+  free(E131LocalAddress);
 }
 
 char * GetE131LocalAddressFromInterface()
@@ -116,10 +114,6 @@ int E131_InitializeNetwork()
   char sOctet2[4];
   char sAddress[32];
   sendSocket = socket(AF_INET, SOCK_DGRAM, 0);
-
-  if (!UniverseCount)
-    return 1;
-
   if (sendSocket < 0) 
   {
     LogWrite("Error opening datagram socket\n");
@@ -217,8 +211,7 @@ void E131_CloseSequenceFile()
   }
   E131status = E131_STATUS_IDLE;
 
-  if (!IsEffectRunning())
-    SendBlankingData();
+  SendBlankingData();
 }
 
 int IsSequenceRunning(void)
@@ -227,16 +220,6 @@ int IsSequenceRunning(void)
     return 1;
 
   return 0;
-}
-
-int NormalizeControlValue(char in)
-{
-	char result = (char)(((unsigned char)in + 5) / 10);
-
-	if (result == 26)
-		return 25;
-
-	return result;
 }
 
 void E131_ReadData(void)
@@ -249,22 +232,6 @@ void E131_ReadData(void)
 		{
 			bytesRead=fread(fileData,1,stepSize,seqFile);
 			filePosition+=bytesRead;
-
-			if (getControlMajor() && getControlMinor())
-			{
-				char thisMajor = NormalizeControlValue(fileData[getControlMajor()-1]);
-				char thisMinor = NormalizeControlValue(fileData[getControlMinor()-1]);
-
-				if ((lastControlMajor != thisMajor) ||
-						(lastControlMinor != thisMinor))
-				{
-					lastControlMajor = thisMajor;
-					lastControlMinor = thisMinor;
-
-					if (lastControlMajor && lastControlMinor)
-						TriggerEvent(lastControlMajor, lastControlMinor);
-				}
-			}
 		}
 
 		if (bytesRead != stepSize)
@@ -276,9 +243,6 @@ void E131_ReadData(void)
 	{
 		bzero(fileData, sizeof(fileData));
 	}
-
-	if (IsEffectRunning())
-		OverlayEffects(fileData);
 }
 
 void E131_Send()
@@ -314,8 +278,7 @@ void E131_Send()
 
 void E131_SendPixelnetDMXdata()
 {
-	if (IsPixelnetDMXActive())
-		SendPixelnetDMX();
+	SendPixelnetDMX();
 }
 
 void LoadUniversesFromFile()
@@ -407,7 +370,7 @@ void UniversesPrint()
   int h;
   for(i=0;i<UniverseCount;i++)
   {
-    LogWrite("E1.31 Universe: %d:%d:%d:%d:%d  %s\n",
+    LogWrite("%d:%d:%d:%d:%d  %s\n",
                                          universes[i].active,
                                           universes[i].universe,
                                           universes[i].size,
