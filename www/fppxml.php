@@ -217,9 +217,7 @@ function RebootPi()
 function ManualGitUpdate()
 {
 	global $fppDir;
-	exec(SUDO . " $fppDir/scripts/fppd_stop");
 	exec("$fppDir/scripts/git_pull");
-	exec(SUDO . " $fppDir/scripts/fppd_start");
 }
 
 function ChangeGitBranch()
