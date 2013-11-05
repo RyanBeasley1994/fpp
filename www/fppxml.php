@@ -13,8 +13,7 @@ require_once('pixelnetdmxentry.php');
 // Commands defined here which return something other
 // than XML need to return their own Content-type header.
 $nonXML = Array(
-	"getLog" => 1,
-	"getGitOriginLog" => 1
+	"getLog" => 1
 	);
 
 $a = session_id();
@@ -64,7 +63,6 @@ $command_array = Array(
 	"shutdownPi" => 'ShutdownPi',
 	"manualGitUpdate" => 'ManualGitUpdate',
 	"changeGitBranch" => 'ChangeGitBranch',
-	"getGitOriginLog" => 'GetGitOriginLog',
 	"setAutoUpdate" => 'SetAutoUpdate',
 	"setDeveloperMode" => 'SetDeveloperMode',
 	"setVolume" => 'SetVolume',
@@ -231,19 +229,6 @@ function ChangeGitBranch()
 
 	global $fppDir;
 	exec("$fppDir/scripts/git_branch $branch");
-}
-
-function GetGitOriginLog()
-{
-	header('Content-type: text/plain');
-
-	global $fppDir;
-	$fullLog = "";
-	exec("$fppDir/scripts/git_fetch", $log);
-	exec("$fppDir/scripts/git_origin_log", $log);
-	$fullLog .= implode("\n", $log);
-
-	echo $fullLog;
 }
 
 function SetAutoUpdate()
